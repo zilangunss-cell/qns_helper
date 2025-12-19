@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<title>Insurance Quiz & Assessment</title>
+
+<style>
+body{margin:0;font-family:system-ui;background:#f2f4f7}
+.container{display:grid;grid-template-columns:35% 65%;height:100vh;gap:16px;padding:16px;box-sizing:border-box}
+.panel{background:#fff;border-radius:14px;padding:20px;box-shadow:0 6px 20px rgba(0,0,0,.08);position:relative}
+.right{overflow-y:auto}
+.question{border:1px solid #e5e7eb;border-radius:12px;padding:16px;margin-bottom:16px}
+.options{margin-top:10px}
+.option{margin-bottom:6px}
+button{margin-top:16px;width:100%;padding:12px;background:#2563eb;color:#fff;border:none;border-radius:10px;font-weight:600;cursor:pointer}
+.secondary{background:#10b981}
+.log-panel{position:absolute;bottom:12px;left:12px;right:12px;max-height:170px;background:#0f172a;color:#e5e7eb;border-radius:10px;padding:10px;font-size:12px;overflow-y:auto}
+.tab-header{display:flex;gap:10px;margin-bottom:8px}
+.tab-header span{cursor:pointer;font-weight:600}
+.tab{display:none}
+.tab.active{display:block}
+.log.ok{color:#22c55e}
+.log.info{color:#38bdf8}
+.log.error{color:#f87171}
+</style>
+</head>
+
+<body>
+<div class="container">
+
+<!-- SOL -->
+<div class="panel">
+<h2>Sigorta Ürününden Soru Üret</h2>
+
+<label>OpenAI API Key</label>
+<input id="apiKey" type="password" style="width:100%">
+
+<label>Ürün Ekran Görüntüleri (max 5)</label>
+<input id="images" type="file" accept="image/*" multiple>
+
+<button onclick="generateQuestions()">Soruları Oluştur</button>
+
+<hr>
+
+<h3>Cevaplarını İşaretle</h3>
+<div id="answerPanel"></div>
+
+<button class="secondary" onclick="evaluateAnswers()">Cevapları Değerlendir</button>
+
+<div class="log-panel">
+  <div class="tab-header">
+    <span onclick="switchTab('log')" id="logTabBtn">Log</span>
+    <span onclick="switchTab('eval')" id="evalTabBtn">Değerlendirme</span>
+  </div>
+  <div id="logTab" class="tab active"></div>
+  <div id="evalTab" class="tab"></div>
+</div>
+</div>
+
+<!-- SAĞ -->
+<div class="panel right" id="output">
+<h2>Oluşturulan Sorular</h2>
+</div>
+
+</div>
+
+<script>
+let sessionKey, questions=[];
+let userAnswers={};
+
+function log(msg,type="info"){
+ const d=document.createElement("div");
+ d.className="log "+type;
+ d.textContent=`[${new Date().toLocaleTimeString()}] ${msg}`;
+ document.getElementById("logTab").appendChild(d);
+}
+
+function switchTab(tab){
+ document.getElementById("logTab").classList.remove("active");
+ document.getElementById("evalTab").classList.remove("active");
+ document.getElementById(tab+"Tab").classList.add("active");
+}
+
+function toBase64(file){
+ return new Promise(res=>{
+  const r=new FileReader();
+  r.onload=()=>res(r.result.split(",")[1]);
+  r.readAsDataURL(file);
+ });
+}
+
+async function generateQuestions(){
+ document.getElementById("logTab").innerHTML="";
+ document.getElementById("evalTab").innerHTML="";
+ sessionKey=document.getElementById("apiKey").value;
+ const files=[...document.getElementById("images").files];
+ if(!sessionKey||files.length===0){log("Eksik bilgi","error");return;}
+ log("Süreç başladı","ok");
+
+ const imgs=await Promise.all(files.map(toBase64));
+ log("Görseller hazır","ok");
+
+ const content=[{type:"text",text:`10 adet Türkçe, 5 şıklı sigorta sorusu üret. SADECE JSON.`},
+ ...imgs.map(i=>({type:"image_url",image_url:{url:"data:image/png;base64,"+i}}))];
+
+ const r=await fetch("https://api.openai.com/v1/chat/completions",{
+  method:"POST",
+  headers:{Authorization:"Bearer "+sessionKey,"Content-Type":"application/json"},
+  body:JSON.stringify({model:"gpt-4o",messages:[{role:"user",content}],temperature:.4})
+ });
+
+ const raw=(await r.json()).choices[0].message.content.replace(/```json|```/g,"").trim();
+ questions=JSON.parse(raw);
+ log("Sorular oluşturuldu","ok");
+ renderQuestions();
+ renderAnswerPanel();
+}
+
+function renderQuestions(){
+ const o=document.getElementById("output");
+ o.innerHTML="<h2>Oluşturulan Sorular</h2>";
+ questions.forEach((q,i)=>{
+  o.innerHTML+=`
+   <div class="question">
+    <b>${i+1}. ${q.question}</b>
+    ${q.options.map(op=>`<div>${op}</div>`).join("")}
+   </div>`;
+ });
+}
+
+function renderAnswerPanel(){
+ const p=document.getElementById("answerPanel");
+ p.innerHTML="";
+ questions.forEach((_,i)=>{
+  p.innerHTML+=`
+   <div>
+    ${i+1}.
+    ${["A","B","C","D","E"].map(l=>`
+     <label>
+      <input type="radio" name="q${i}" onchange="userAnswers[${i+1}]='${l}'">${l}
+     </label>`).join(" ")}
+   </div>`;
+ });
+}
+
+async function evaluateAnswers(){
+ log("Değerlendirme başlatıldı","ok");
+ const prompt=`
+Sorular:
+${JSON.stringify(questions)}
+
+Kullanıcı cevapları:
+${JSON.stringify(userAnswers)}
+
+Bu sigorta ürünü bağlamında:
+- Cevapları değerlendir
+- Kullanıcının bilgi seviyesini yorumla
+- Güçlü ve zayıf alanları belirt
+- Kısa ve profesyonel Türkçe yaz
+`;
+
+ const r=await fetch("https://api.openai.com/v1/chat/completions",{
+  method:"POST",
+  headers:{Authorization:"Bearer "+sessionKey,"Content-Type":"application/json"},
+  body:JSON.stringify({model:"gpt-4o",messages:[{role:"user",content:prompt}],temperature:.3})
+ });
+
+ const text=(await r.json()).choices[0].message.content;
+ document.getElementById("evalTab").innerHTML=`<pre>${text}</pre>`;
+ switchTab("eval");
+ log("Değerlendirme tamamlandı","ok");
+}
+</script>
+</body>
+</html>
