@@ -100,9 +100,19 @@ async function generateQuestions(){
  const imgs=await Promise.all(files.map(toBase64));
  log("Görseller hazır","ok");
 
- const content=[{type:"text",text:`10 adet Türkçe, 5 şıklı sigorta sorusu üret. SADECE JSON.`},
- ...imgs.map(i=>({type:"image_url",image_url:{url:"data:image/png;base64,"+i}}))];
-
+ const content=[{type:"text",text:`
+10 adet Türkçe, 5 şıklı sigorta sorusu üret. 
+Çıktı SADECE geçerli bir JSON dizisi (array) olmalı ve şu formatı kullanmalı:
+[
+  {
+    "question": "Soru metni buraya",
+    "options": ["A şıkkı", "B şıkkı", "C şıkkı", "D şıkkı", "E şıkkı"],
+    "answer": "Doğru şık (Örn: A)"
+  }
+]
+Markdown formatı kullanma, sadece raw JSON ver.`},
+...imgs.map(i=>({type:"image_url",image_url:{url:"data:image/png;base64,"+i}}))];
+  
  const r=await fetch("https://api.openai.com/v1/chat/completions",{
   method:"POST",
   headers:{Authorization:"Bearer "+sessionKey,"Content-Type":"application/json"},
