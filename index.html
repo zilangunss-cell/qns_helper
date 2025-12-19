@@ -69,41 +69,47 @@ let sessionKey, questions=[];
 let userAnswers={};
 
 function log(msg,type="info"){
- const d=document.createElement("div");
- d.className="log "+type;
- d.textContent=`[${new Date().toLocaleTimeString()}] ${msg}`;
- document.getElementById("logTab").appendChild(d);
+  const d=document.createElement("div");
+  d.className="log "+type;
+  d.textContent=`[${new Date().toLocaleTimeString()}] ${msg}`;
+  const logTab = document.getElementById("logTab");
+  logTab.appendChild(d);
+  logTab.scrollTop = logTab.scrollHeight; // Otomatik aşağı kaydır
 }
 
 function switchTab(tab){
- document.getElementById("logTab").classList.remove("active");
- document.getElementById("evalTab").classList.remove("active");
- document.getElementById(tab+"Tab").classList.add("active");
+  document.getElementById("logTab").classList.remove("active");
+  document.getElementById("evalTab").classList.remove("active");
+  document.getElementById(tab+"Tab").classList.add("active");
 }
 
 function toBase64(file){
- return new Promise(res=>{
-  const r=new FileReader();
-  r.onload=()=>res(r.result.split(",")[1]);
-  r.readAsDataURL(file);
- });
+  return new Promise(res=>{
+    const r=new FileReader();
+    r.onload=()=>res(r.result.split(",")[1]);
+    r.readAsDataURL(file);
+  });
 }
 
+// --- DÜZELTİLMİŞ ANA FONKSİYON ---
 async function generateQuestions(){
   document.getElementById("logTab").innerHTML="";
   document.getElementById("evalTab").innerHTML="";
   sessionKey=document.getElementById("apiKey").value;
   const files=[...document.getElementById("images").files];
-  
-  if(!sessionKey || files.length===0){ log("Eksik bilgi: API Key veya Resim yok", "error"); return; }
-  
+   
+  if(!sessionKey || files.length===0){ 
+    log("Eksik bilgi: API Key veya Resim yok", "error"); 
+    return; 
+  }
+   
   log("Süreç başladı", "ok");
 
   try {
       const imgs=await Promise.all(files.map(toBase64));
       log("Görseller işlendi", "ok");
 
-      // PROMPT GÜNCELLENDİ: Kesin format belirtildi.
+      // PROMPT: Kesin format belirtildi.
       const content=[
         {
           type:"text", 
@@ -138,12 +144,17 @@ async function generateQuestions(){
       raw = raw.replace(/```json/g, "").replace(/```/g, "").trim();
 
       // JSON Parse Denemesi
-      let parsedData = JSON.parse(raw);
+      let parsedData;
+      try {
+        parsedData = JSON.parse(raw);
+      } catch (e) {
+        throw new Error("JSON Parse Hatası. Gelen veri bozuk olabilir.");
+      }
 
       // EĞER GPT veriyi { "questions": [...] } içine sarmışsa onu düzelt:
       if (!Array.isArray(parsedData) && parsedData.questions) {
           parsedData = parsedData.questions;
-      } else if (!Array.isArray(parsedData) && parsedData.sorular) { // Türkçe key dönerse diye önlem
+      } else if (!Array.isArray(parsedData) && parsedData.sorular) { 
           parsedData = parsedData.sorular;
       }
 
@@ -163,89 +174,65 @@ async function generateQuestions(){
   }
 }
 
- const imgs=await Promise.all(files.map(toBase64));
- log("Görseller hazır","ok");
-
- const content=[{type:"text",text:`
-10 adet Türkçe, 5 şıklı sigorta sorusu üret. 
-Çıktı SADECE geçerli bir JSON dizisi (array) olmalı ve şu formatı kullanmalı:
-[
-  {
-    "question": "Soru metni buraya",
-    "options": ["A şıkkı", "B şıkkı", "C şıkkı", "D şıkkı", "E şıkkı"],
-    "answer": "Doğru şık (Örn: A)"
-  }
-]
-Markdown formatı kullanma, sadece raw JSON ver.`},
-...imgs.map(i=>({type:"image_url",image_url:{url:"data:image/png;base64,"+i}}))];
-  
- const r=await fetch("https://api.openai.com/v1/chat/completions",{
-  method:"POST",
-  headers:{Authorization:"Bearer "+sessionKey,"Content-Type":"application/json"},
-  body:JSON.stringify({model:"gpt-4o",messages:[{role:"user",content}],temperature:.4})
- });
-
- const raw=(await r.json()).choices[0].message.content.replace(/```json|```/g,"").trim();
- questions=JSON.parse(raw);
- log("Sorular oluşturuldu","ok");
- renderQuestions();
- renderAnswerPanel();
-}
-
 function renderQuestions(){
- const o=document.getElementById("output");
- o.innerHTML="<h2>Oluşturulan Sorular</h2>";
- questions.forEach((q,i)=>{
+  const o=document.getElementById("output");
+  o.innerHTML="<h2>Oluşturulan Sorular</h2>";
+  questions.forEach((q,i)=>{
   o.innerHTML+=`
-   <div class="question">
+    <div class="question">
     <b>${i+1}. ${q.question}</b>
     ${q.options.map(op=>`<div>${op}</div>`).join("")}
-   </div>`;
- });
+    </div>`;
+  });
 }
 
 function renderAnswerPanel(){
- const p=document.getElementById("answerPanel");
- p.innerHTML="";
- questions.forEach((_,i)=>{
+  const p=document.getElementById("answerPanel");
+  p.innerHTML="";
+  questions.forEach((_,i)=>{
   p.innerHTML+=`
-   <div>
+    <div>
     ${i+1}.
     ${["A","B","C","D","E"].map(l=>`
-     <label>
+      <label>
       <input type="radio" name="q${i}" onchange="userAnswers[${i+1}]='${l}'">${l}
-     </label>`).join(" ")}
-   </div>`;
- });
+      </label>`).join(" ")}
+    </div>`;
+  });
 }
 
 async function evaluateAnswers(){
- log("Değerlendirme başlatıldı","ok");
- const prompt=`
-Sorular:
-${JSON.stringify(questions)}
+  log("Değerlendirme başlatıldı","ok");
+  const prompt=`
+  Sorular:
+  ${JSON.stringify(questions)}
 
-Kullanıcı cevapları:
-${JSON.stringify(userAnswers)}
+  Kullanıcı cevapları:
+  ${JSON.stringify(userAnswers)}
 
-Bu sigorta ürünü bağlamında:
-- Cevapları değerlendir
-- Kullanıcının bilgi seviyesini yorumla
-- Güçlü ve zayıf alanları belirt
-- Kısa ve profesyonel Türkçe yaz
-`;
+  Bu sigorta ürünü bağlamında:
+  - Cevapları değerlendir
+  - Kullanıcının bilgi seviyesini yorumla
+  - Güçlü ve zayıf alanları belirt
+  - Kısa ve profesyonel Türkçe yaz
+  `;
 
- const r=await fetch("https://api.openai.com/v1/chat/completions",{
-  method:"POST",
-  headers:{Authorization:"Bearer "+sessionKey,"Content-Type":"application/json"},
-  body:JSON.stringify({model:"gpt-4o",messages:[{role:"user",content:prompt}],temperature:.3})
- });
+  try {
+    const r=await fetch("https://api.openai.com/v1/chat/completions",{
+      method:"POST",
+      headers:{Authorization:"Bearer "+sessionKey,"Content-Type":"application/json"},
+      body:JSON.stringify({model:"gpt-4o",messages:[{role:"user",content:prompt}],temperature:0.3})
+    });
 
- const text=(await r.json()).choices[0].message.content;
- document.getElementById("evalTab").innerHTML=`<pre>${text}</pre>`;
- switchTab("eval");
- log("Değerlendirme tamamlandı","ok");
+    const data = await r.json();
+    const text = data.choices[0].message.content;
+    document.getElementById("evalTab").innerHTML=`<pre style="white-space: pre-wrap;">${text}</pre>`;
+    switchTab("eval");
+    log("Değerlendirme tamamlandı","ok");
+  } catch(e) {
+    log("Değerlendirme hatası: " + e.message, "error");
+  }
 }
 </script>
 </body>
-</html>
+</html> 
