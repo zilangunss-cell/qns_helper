@@ -90,12 +90,78 @@ function toBase64(file){
 }
 
 async function generateQuestions(){
- document.getElementById("logTab").innerHTML="";
- document.getElementById("evalTab").innerHTML="";
- sessionKey=document.getElementById("apiKey").value;
- const files=[...document.getElementById("images").files];
- if(!sessionKey||files.length===0){log("Eksik bilgi","error");return;}
- log("Süreç başladı","ok");
+  document.getElementById("logTab").innerHTML="";
+  document.getElementById("evalTab").innerHTML="";
+  sessionKey=document.getElementById("apiKey").value;
+  const files=[...document.getElementById("images").files];
+  
+  if(!sessionKey || files.length===0){ log("Eksik bilgi: API Key veya Resim yok", "error"); return; }
+  
+  log("Süreç başladı", "ok");
+
+  try {
+      const imgs=await Promise.all(files.map(toBase64));
+      log("Görseller işlendi", "ok");
+
+      // PROMPT GÜNCELLENDİ: Kesin format belirtildi.
+      const content=[
+        {
+          type:"text", 
+          text:`Bu görsellerdeki sigorta ürününü analiz et. Buna dayanarak 10 adet zorluk derecesi dengeli Türkçe test sorusu üret.
+          
+          ÇIKTI FORMATI KURALI (KESİN):
+          Sadece ve sadece bir JSON Array (Dizi) döndür. Başka hiçbir metin veya markdown ('''json gibi) ekleme.
+          
+          Nesne yapısı tam olarak şöyle olmalı (Key isimleri İngilizce kalmalı):
+          [
+            {
+              "question": "Soru metni...",
+              "options": ["A) Şık 1", "B) Şık 2", "C) Şık 3", "D) Şık 4", "E) Şık 5"]
+            }
+          ]`
+        },
+        ...imgs.map(i=>({type:"image_url",image_url:{url:"data:image/png;base64,"+i}}))
+      ];
+
+      const r=await fetch("https://api.openai.com/v1/chat/completions",{
+        method:"POST",
+        headers:{Authorization:"Bearer "+sessionKey,"Content-Type":"application/json"},
+        body:JSON.stringify({model:"gpt-4o",messages:[{role:"user",content}],temperature:0.7})
+      });
+
+      if (!r.ok) { throw new Error("API Hatası: " + r.statusText); }
+
+      const data = await r.json();
+      let raw = data.choices[0].message.content;
+      
+      // Temizlik işlemleri (Markdown temizliği)
+      raw = raw.replace(/```json/g, "").replace(/```/g, "").trim();
+
+      // JSON Parse Denemesi
+      let parsedData = JSON.parse(raw);
+
+      // EĞER GPT veriyi { "questions": [...] } içine sarmışsa onu düzelt:
+      if (!Array.isArray(parsedData) && parsedData.questions) {
+          parsedData = parsedData.questions;
+      } else if (!Array.isArray(parsedData) && parsedData.sorular) { // Türkçe key dönerse diye önlem
+          parsedData = parsedData.sorular;
+      }
+
+      if (!Array.isArray(parsedData)) {
+          throw new Error("Gelen veri dizi formatında değil. Format: " + typeof parsedData);
+      }
+
+      questions = parsedData;
+      log("Sorular başarıyla oluşturuldu (" + questions.length + " adet)", "ok");
+      
+      renderQuestions();
+      renderAnswerPanel();
+
+  } catch (err) {
+      console.error(err);
+      log("HATA: " + err.message, "error");
+  }
+}
 
  const imgs=await Promise.all(files.map(toBase64));
  log("Görseller hazır","ok");
