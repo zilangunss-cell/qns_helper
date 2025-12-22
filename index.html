@@ -252,41 +252,123 @@ function renderAnswerPanel(){
   });
 }
 
-async function evaluateAnswers(){
-  log("Cevaplar değerlendiriliyor...","info");
+// --- DÜZELTİLMİŞ ANA FONKSİYON ---
+async function generateQuestions(){
+  document.getElementById("logTab").innerHTML="";
+  document.getElementById("evalTab").innerHTML="";
+  document.getElementById("evalBtn").style.display="none";
   
-  // Eksik cevap kontrolü (Opsiyonel)
-  if(Object.keys(userAnswers).length < questions.length){
-    log("Uyarı: Bazı sorular boş bırakıldı.", "error");
+  // 1. API KEY TEMİZLİK VE KONTROLÜ
+  let rawKey = document.getElementById("apiKey").value;
+  // Baştaki/sondaki boşlukları sil
+  sessionKey = rawKey ? rawKey.trim() : "";
+
+  const textVal = document.getElementById("productText").value;
+  const files=[...document.getElementById("images").files];
+  const mode = document.getElementById("modeSelect").value;
+   
+  if(!sessionKey){ 
+    log("Lütfen API Key giriniz.", "error"); 
+    return; 
   }
 
-  const prompt=`
-  SİMÜLASYON RAPORU İSTEĞİ:
+  // Türkçe karakter veya geçersiz sembol kontrolü
+  if (/[^\x00-\x7F]/.test(sessionKey)) {
+    log("KRİTİK HATA: API Key kutusunda Türkçe karakter veya geçersiz sembol var. Lütfen silip tekrar yapıştırın.", "error");
+    return;
+  }
   
-  Sorular: ${JSON.stringify(questions)}
-  Kullanıcı Cevapları: ${JSON.stringify(userAnswers)}
-
-  GÖREV:
-  1. Her sorunun doğru cevabını ve kullanıcının ne işaretlediğini belirt.
-  2. Kullanıcının hatası varsa, neden hata yaptığını "Poliçe Mantığına" dayandırarak açıkla. (Örn: "Hayır, bu teminat sadece kaza durumunda geçerlidir.")
-  3. Kullanıcıya bir "Ürün Hakimiyet Skoru" ver (100 üzerinden).
-  4. Agesa yöneticisine sunulacak profesyonel bir dil kullan.
-  `;
+  if(files.length === 0 && textVal.trim() === ""){
+    log("Lütfen en az bir resim yükleyin VEYA ürün metni yapıştırın.", "error");
+    return;
+  }
+   
+  log("Analiz başlatılıyor...", "ok");
 
   try {
-    const r=await fetch("https://api.openai.com/v1/chat/completions",{
-      method:"POST",
-      headers:{Authorization:"Bearer "+sessionKey,"Content-Type":"application/json"},
-      body:JSON.stringify({model:"gpt-4o",messages:[{role:"user",content:prompt}],temperature:0.3})
-    });
+      let content = [];
+      
+      let systemPrompt = "";
+      if(mode === "hardcase") {
+        systemPrompt = `Sen acımasız bir sigorta denetçisisin (Auditor). 
+        Verilen sigorta ürünü metnini/görsellerini analiz et.
+        Amacın kullanıcının "İstisnalar", "Teminat Dışı Haller" ve "Özel Şartlar" konusundaki bilgisini zorlamak.
+        
+        Bana 5 adet "Case Study" (Vaka Analizi) sorusu üret.
+        Sorular "Aşağıdakilerden hangisi kapsamdadır?" gibi basit OLMASIN.
+        Örnek format: "Ahmet Bey X durumunu yaşadı, Y belgesi eksik ama Z şartı var. Poliçe ödeme yapar mı?"
+        
+        Şıklar detaylı ve çeldirici olsun.`;
+      } else {
+        systemPrompt = `Bu sigorta ürününü analiz et. Ürünün genel kapsamı, limitleri ve özellikleri hakkında 10 adet öğretici test sorusu üret.`;
+      }
 
-    const data = await r.json();
-    const text = data.choices[0].message.content;
-    document.getElementById("evalTab").innerHTML=`<pre style="white-space: pre-wrap; font-family:inherit; line-height:1.5">${text}</pre>`;
-    switchTab("eval");
-    log("Rapor oluşturuldu.","ok");
-  } catch(e) {
-    log("Değerlendirme hatası: " + e.message, "error");
+      const formatInstruction = `
+      ÇIKTI FORMATI KURALI (KESİN):
+      Sadece ve sadece bir JSON Array (Dizi) döndür. Markdown yok.
+      Format:
+      [
+        {
+          "question": "Soru metni...",
+          "options": ["A) ...", "B) ...", "C) ...", "D) ...", "E) ..."]
+        }
+      ]`;
+
+      content.push({ type: "text", text: systemPrompt + "\n\n" + formatInstruction });
+
+      if(textVal.trim() !== "") {
+        content.push({ type: "text", text: "ÜRÜN METNİ / POLİÇE DETAYLARI:\n" + textVal });
+      }
+
+      if(files.length > 0) {
+        const imgs = await Promise.all(files.map(toBase64));
+        log("Görseller işlendi", "ok");
+        imgs.forEach(i => {
+           content.push({type:"image_url",image_url:{url:"data:image/png;base64,"+i}});
+        });
+      }
+
+      const r=await fetch("https://api.openai.com/v1/chat/completions",{
+        method:"POST",
+        headers:{Authorization:"Bearer "+sessionKey,"Content-Type":"application/json"},
+        body:JSON.stringify({model:"gpt-4o",messages:[{role:"user",content}],temperature:0.7})
+      });
+
+      if (!r.ok) { 
+          const errData = await r.json().catch(()=>({}));
+          throw new Error("API Hatası: " + r.status + " - " + (errData.error?.message || r.statusText)); 
+      }
+
+      const data = await r.json();
+      let raw = data.choices[0].message.content;
+      
+      raw = raw.replace(/```json/g, "").replace(/```/g, "").trim();
+
+      let parsedData;
+      try {
+        parsedData = JSON.parse(raw);
+      } catch (e) {
+        throw new Error("AI geçerli JSON üretemedi. Lütfen tekrar deneyin.");
+      }
+
+      if (!Array.isArray(parsedData) && parsedData.questions) parsedData = parsedData.questions;
+      if (!Array.isArray(parsedData) && parsedData.sorular) parsedData = parsedData.sorular;
+
+      if (!Array.isArray(parsedData)) {
+          throw new Error("Format hatası. Gelen veri dizi değil.");
+      }
+
+      questions = parsedData;
+      userAnswers = {}; 
+      log(`Başarılı: ${questions.length} adet simülasyon sorusu üretildi.`, "ok");
+      
+      renderQuestions();
+      renderAnswerPanel();
+      document.getElementById("evalBtn").style.display="block";
+
+  } catch (err) {
+      console.error(err);
+      log("HATA: " + err.message, "error");
   }
 }
 </script>
