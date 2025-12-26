@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Agesa Ürün Simülatörü - Multi PDF</title>
+<title>Agesa Ürün Simülatörü - V3 (Detaylı)</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
 
 <style>
@@ -41,20 +41,23 @@
   .empty-state { text-align: center; color: #65676b; margin-top: 100px; }
   
   .question-card { background: #f7f8fa; border: 1px solid #dddfe2; border-radius: 10px; padding: 20px; margin-bottom: 20px; }
-  .question-title { color: #1c1e21; font-weight: 700; margin-bottom: 15px; display: block; }
-  .option { padding: 8px 12px; margin-bottom: 5px; background: white; border: 1px solid #ebedf0; border-radius: 6px; font-size: 14px; color: #4b4c4f; }
+  .question-title { color: #1c1e21; font-weight: 700; margin-bottom: 15px; display: block; font-size: 16px; line-height: 1.4; }
+  .option { padding: 10px 12px; margin-bottom: 8px; background: white; border: 1px solid #ebedf0; border-radius: 6px; font-size: 14px; color: #4b4c4f; }
+  .option strong { color: #bf2d30; margin-right: 5px; }
   
   .answer-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 10px; margin-top: 20px; padding-top: 20px; border-top: 1px solid #eee; }
-  .answer-item { background: #f0f2f5; padding: 10px; border-radius: 6px; display: flex; align-items: center; justify-content: space-between; font-size: 13px; font-weight: 600; }
-  
-  .evaluation-box { background: #e7f3ff; color: #0c3d69; padding: 20px; border-radius: 8px; margin-top: 20px; line-height: 1.6; white-space: pre-wrap; border-left: 5px solid #1877f2; }
+  .answer-item { background: #f0f2f5; padding: 10px; border-radius: 6px; display: flex; align-items: center; justify-content: space-between; font-size: 13px; font-weight: 600; cursor: pointer; transition: background 0.2s; }
+  .answer-item:hover { background: #e4e6eb; }
+  .answer-item input { margin-right: 10px; cursor: pointer; }
+
+  .evaluation-box { background: #e7f3ff; color: #0c3d69; padding: 20px; border-radius: 8px; margin-top: 20px; line-height: 1.6; white-space: pre-wrap; border-left: 5px solid #1877f2; font-size: 14px; }
 </style>
 </head>
 <body>
 
 <div class="header-bar">
   <h1>🛡️ Agesa Ürün Simülatörü</h1>
-  <span class="badge">V2.1 - Multi PDF</span>
+  <span class="badge">V3.0 - Detaylı Analiz</span>
 </div>
 
 <div class="container">
@@ -68,8 +71,8 @@
     <div class="input-group">
       <label>2. Çalışma Modu</label>
       <select id="modeSelect">
-        <option value="standard">🎓 Öğretici Mod (Genel Bilgi)</option>
-        <option value="hardcase">🔥 Denetçi Modu (Zorlu Vakalar)</option>
+        <option value="detailed">🧠 Detaylı & Koşullu Sorular (Önerilen)</option>
+        <option value="hardcase">🔥 Denetçi Modu (Aşırı Zor)</option>
       </select>
     </div>
 
@@ -92,21 +95,20 @@
     <button class="btn-primary" onclick="startProcess()">ANALİZİ BAŞLAT</button>
 
     <div class="log-console" id="logger">
-      <div class="log-line">Sistem hazır. PDF'leri yükleyip başlayın...</div>
+      <div class="log-line">Sistem hazır.</div>
     </div>
   </div>
 
   <div class="main-content" id="outputArea">
     <div class="empty-state">
       <h2>Henüz Analiz Yok</h2>
-      <p>Sol taraftan PDF'lerinizi seçip analizi başlatın.</p>
+      <p>Sol taraftan doküman yükleyip analizi başlatın.</p>
     </div>
   </div>
 
 </div>
 
 <script>
-// PDF Worker Ayarı
 pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
 
 let sessionKey = "";
@@ -122,41 +124,30 @@ function log(msg, type) {
   box.scrollTop = box.scrollHeight;
 }
 
-// Dosya Seçimi Göstergesi
 function handlePDFSelection(input) {
   const display = document.getElementById("fileListDisplay");
   if (input.files && input.files.length > 0) {
     let names = [];
-    for(let i=0; i<input.files.length; i++) {
-        names.push("• " + input.files[i].name);
-    }
+    for(let i=0; i<input.files.length; i++) names.push("• " + input.files[i].name);
     display.innerHTML = names.join("<br>");
-    log(`${input.files.length} adet PDF seçildi.`, "inf");
+    log(`${input.files.length} PDF seçildi.`, "inf");
   } else {
     display.innerHTML = "";
   }
 }
 
-// TEKİL PDF OKUMA
 async function parsePDF(file) {
   log(`Okunuyor: ${file.name}...`, "inf");
   try {
     const buffer = await file.arrayBuffer();
     const pdf = await pdfjsLib.getDocument(buffer).promise;
     let fullText = "";
-    
     for(let i=1; i<=pdf.numPages; i++){
       const page = await pdf.getPage(i);
       const content = await page.getTextContent();
-      const strings = content.items.map(item => item.str);
-      fullText += `\n--- [${file.name} - Sayfa ${i}] ---\n` + strings.join(" ");
+      fullText += `\n--- [${file.name} Syf ${i}] ---\n` + content.items.map(i=>i.str).join(" ");
     }
-    
-    if(fullText.length < 50) {
-      log(`UYARI: ${file.name} dosyasından metin alınamadı.`, "err");
-      return "";
-    }
-    return fullText;
+    return fullText.length > 50 ? fullText : "";
   } catch(e) {
     log(`Hata (${file.name}): ` + e.message, "err");
     return "";
@@ -164,77 +155,82 @@ async function parsePDF(file) {
 }
 
 function toBase64(file) {
-  return new Promise((resolve) => {
+  return new Promise((r) => {
     const reader = new FileReader();
-    reader.onload = () => resolve(reader.result.split(',')[1]);
+    reader.onload = () => r(reader.result.split(',')[1]);
     reader.readAsDataURL(file);
   });
 }
 
-// ANA İŞLEM BAŞLATMA
 async function startProcess() {
-  document.getElementById("outputArea").innerHTML = '<div class="empty-state"><h3>Analiz Ediliyor...</h3><p>Lütfen bekleyiniz, yapay zeka dokümanları okuyor.</p></div>';
+  document.getElementById("outputArea").innerHTML = '<div class="empty-state"><h3>Analiz Ediliyor...</h3><p>Yapay zeka detaylı senaryoları inceliyor...</p></div>';
   questions = [];
   userAnswers = {};
 
-  const key = document.getElementById("apiKey").value.trim();
+  // API Key Temizliği
+  let rawKey = document.getElementById("apiKey").value;
+  const key = rawKey.replace(/[^\x00-\x7F]/g, "").trim();
+  document.getElementById("apiKey").value = key;
+  sessionKey = key;
+
   const pdfFiles = document.getElementById("pdfInput").files;
   const imgFiles = document.getElementById("imgInput").files;
   const mode = document.getElementById("modeSelect").value;
 
   if(!key) { log("Lütfen API Key giriniz!", "err"); return; }
-  sessionKey = key;
-
-  if(pdfFiles.length === 0 && imgFiles.length === 0) { log("Lütfen en az bir dosya seçin.", "err"); return; }
+  if(pdfFiles.length === 0 && imgFiles.length === 0) { log("Dosya seçilmedi!", "err"); return; }
 
   try {
-    // 1. TÜM PDF'LERİ OKU VE BİRLEŞTİR
     let combinedText = "";
     if(pdfFiles.length > 0) {
-      log(`${pdfFiles.length} adet PDF işleniyor...`, "inf");
-      for (let i = 0; i < pdfFiles.length; i++) {
-        const text = await parsePDF(pdfFiles[i]);
-        combinedText += text + "\n\n====================\n\n";
-      }
-      log(`Tüm PDF'ler birleştirildi (${combinedText.length} karakter).`, "ok");
+      for (let i = 0; i < pdfFiles.length; i++) combinedText += (await parsePDF(pdfFiles[i])) + "\n\n";
     }
     
-    // 2. RESİMLERİ HAZIRLA
     let imageList = [];
     if(imgFiles.length > 0) {
       for(let f of imgFiles) imageList.push(await toBase64(f));
-      log(`${imageList.length} görsel işlendi.`, "ok");
     }
 
-    // 3. PROMPT HAZIRLIĞI
+    // --- KRİTİK PROMPT GÜNCELLEMESİ ---
     let promptText = "";
     if(mode === "hardcase") {
-      promptText = `Sen uzman bir sigorta denetçisisin.
-      Aşağıdaki BİRDEN FAZLA dokümanı analiz et (Özel Şartlar, Bilgilendirme Formları vb. birleşik olabilir).
+      promptText = `Sen uzman bir Sigorta Denetçisisin. Hedefimiz zorlayıcı senaryolar bulmak.
+      GÖREV: Dokümanlardaki "İstisnalar", "Limitler" ve "Özel Şartları" baz alarak 10 adet ÇOK ZOR soru üret.
       
-      GÖREV: Kullanıcıyı zorlayacak 5 adet "Vaka Analizi" (Case Study) sorusu üret.
-      - Sorular özellikle "Kapsam Dışı Haller", "Limitler" ve "Özel Şartlar" arasındaki çelişkilere odaklansın.
-      - Basit tanım soruları sorma. Senaryo kur.`;
+      KURALLAR:
+      1. Asla basit soru sorma ("Süre ne kadar?" gibi).
+      2. Daima KOŞUL belirt. Örn: "Giriş yaşı 50 olan ve X paketini seçen biri için süre ne kadardır?"
+      3. Şıklar birbirine çok yakın olsun (Çeldirici).
+      4. Sorular net olsun, muallaklık olmasın.
+      5. Her soru için KESİNLİKLE 5 adet şık (A,B,C,D,E) üret.`;
     } else {
-      promptText = `Bu sigorta dokümanlarını analiz et. Ürünü öğrenmek isteyen bir personel için 10 adet kaliteli, öğretici çoktan seçmeli soru hazırla.`;
+      promptText = `Sen Kıdemli Sigorta Eğitmenisin. Amacımız personelin ürün detaylarına hakim olmasını sağlamak.
+      GÖREV: Dokümanları analiz et ve 10 adet DETAYLI SİMÜLASYON sorusu üret.
+      
+      KURALLAR:
+      1. Muallak sorulardan kaçın. Örneğin "Süre ne kadar?" deme; "X durumunda süre ne kadar?" de.
+      2. Eğer bir cevabın birden fazla değişkeni varsa (yaş, paket vb.), soruda bu değişkeni sabitle.
+      3. "Her İhtimalin Sigortası" gibi ürünlerdeki yaş aralıklarına ve teminat limitlerine odaklan.
+      4. Her soru için KESİNLİKLE 5 adet şık (A,B,C,D,E) üret.`;
     }
 
     const messages = [
       {
         role: "user",
         content: [
-          { type: "text", text: `${promptText}\n\nÇIKTI FORMATI: Sadece JSON Array döndür. Markdown kullanma. Format: [{"question":"...","options":["A)...","B)..."]}] \n\nDOKÜMAN İÇERİĞİ:\n${combinedText.substring(0, 50000)}` },
+          { type: "text", text: `${promptText}\n\nÇIKTI FORMATI: Sadece JSON Array. Markdown yok. 
+          Format: [{"question":"...","options":["A) ...","B) ...","C) ...","D) ...","E) ..."]}] 
+          \n\nMETİN:\n${combinedText.substring(0, 50000)}` },
           ...imageList.map(img => ({ type: "image_url", image_url: { url: `data:image/jpeg;base64,${img}` } }))
         ]
       }
     ];
 
-    log("OpenAI'a gönderiliyor (Bu işlem biraz sürebilir)...", "inf");
-    
+    log("OpenAI'a gönderiliyor...", "inf");
     const response = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
       headers: { "Authorization": `Bearer ${sessionKey}`, "Content-Type": "application/json" },
-      body: JSON.stringify({ model: "gpt-4o", messages: messages, temperature: 0.5 })
+      body: JSON.stringify({ model: "gpt-4o", messages: messages, temperature: 0.4 })
     });
 
     if(!response.ok) throw new Error("API Hatası: " + response.statusText);
@@ -242,21 +238,15 @@ async function startProcess() {
     const data = await response.json();
     let content = data.choices[0].message.content.replace(/```json|```/g, "").trim();
     
-    try {
-      let parsed = JSON.parse(content);
-      if(parsed.questions) parsed = parsed.questions;
-      if(parsed.sorular) parsed = parsed.sorular;
-      questions = parsed;
-    } catch(e) {
-      throw new Error("JSON Format Hatası. Tekrar deneyin.");
-    }
-
-    log(`${questions.length} soru oluşturuldu.`, "ok");
+    let parsed = JSON.parse(content);
+    questions = Array.isArray(parsed) ? parsed : (parsed.questions || parsed.sorular);
+    
+    log(`${questions.length} detaylı soru üretildi.`, "ok");
     renderUI();
 
   } catch(e) {
     log("Hata: " + e.message, "err");
-    document.getElementById("outputArea").innerHTML = `<div class="empty-state" style="color:red"><h3>Hata Oluştu</h3><p>${e.message}</p></div>`;
+    document.getElementById("outputArea").innerHTML = `<div class="empty-state" style="color:red"><p>${e.message}</p></div>`;
   }
 }
 
@@ -264,20 +254,27 @@ function renderUI() {
   const area = document.getElementById("outputArea");
   area.innerHTML = `<h2>Simülasyon Soruları</h2>`;
   
+  const letters = ["A","B","C","D","E","F"]; // Yedekli harf havuzu
+
   questions.forEach((q, i) => {
+    // Şık sayısına göre dinamik buton üretimi
+    let optionsHTML = "";
+    q.options.forEach((opt, idx) => {
+        let label = letters[idx] || "?";
+        optionsHTML += `
+         <div class="answer-item" onclick="document.getElementById('radio_${i}_${idx}').click()">
+           <div style="display:flex; align-items:center; width:100%">
+             <input type="radio" id="radio_${i}_${idx}" name="q${i}" onchange="userAnswers[${i+1}]='${label}'"> 
+             <span style="font-weight:bold; color:#bf2d30; margin-right:5px">${label})</span> ${opt.replace(/^[A-E]\)\s*/, '')}
+           </div>
+         </div>`;
+    });
+
     area.innerHTML += `
       <div class="question-card">
         <span class="question-title">${i+1}. ${q.question}</span>
-        ${q.options.map(opt => `<div class="option">${opt}</div>`).join('')}
-        
-        <div class="answer-grid" style="border:none; padding:0; margin-top:10px">
-           ${['A','B','C','D','E'].map(L => `
-             <div class="answer-item">
-               <label style="cursor:pointer; width:100%; display:block">
-                 <input type="radio" name="q${i}" onchange="userAnswers[${i+1}]='${L}'"> ${L}
-               </label>
-             </div>
-           `).join('')}
+        <div class="answer-grid" style="grid-template-columns: 1fr; border:none; padding-top:10px">
+           ${optionsHTML}
         </div>
       </div>
     `;
@@ -288,8 +285,8 @@ function renderUI() {
 }
 
 async function evaluateAnswers() {
-  log("Cevaplar değerlendiriliyor...", "inf");
-  const prompt = `Sorular: ${JSON.stringify(questions)}\nKullanıcı Cevapları: ${JSON.stringify(userAnswers)}\n\nLütfen detaylı analiz yap. Doğru cevapları açıkla ve kullanıcı hatalarını düzelt. 100 üzerinden puan ver.`;
+  log("Değerlendiriliyor...", "inf");
+  const prompt = `Sorular: ${JSON.stringify(questions)}\nKullanıcı Cevapları: ${JSON.stringify(userAnswers)}\n\nLütfen detaylı analiz yap. Kullanıcının eksik bildiği noktaları ürün dokümanına atıfta bulunarak (Örn: Özel Şartlar Madde 3) açıkla.`;
   
   const response = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
@@ -299,7 +296,7 @@ async function evaluateAnswers() {
 
   const data = await response.json();
   document.getElementById("evalBox").innerHTML = `<div class="evaluation-box">${data.choices[0].message.content}</div>`;
-  log("Değerlendirme tamamlandı.", "ok");
+  log("Tamamlandı.", "ok");
 }
 </script>
 </body>
