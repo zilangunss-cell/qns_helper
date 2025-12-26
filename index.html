@@ -2,310 +2,289 @@
 <html lang="tr">
 <head>
 <meta charset="UTF-8">
-<title>Agesa Ürün Simülatörü (PDF Destekli)</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agesa Ürün Simülatörü - PDF Modu</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
 
 <style>
-body{margin:0;font-family:-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;background:#f2f4f7;color:#333}
-.container{display:grid;grid-template-columns:40% 60%;height:100vh;gap:16px;padding:16px;box-sizing:border-box}
-.panel{background:#fff;border-radius:14px;padding:20px;box-shadow:0 6px 20px rgba(0,0,0,.08);position:relative;display:flex;flex-direction:column}
-.scrollable{overflow-y:auto;flex-grow:1;padding-right:5px}
-.question{border:1px solid #e2e8f0;border-radius:12px;padding:16px;margin-bottom:16px;background:#f8fafc}
-.question b{color:#1e3a8a;display:block;margin-bottom:10px;font-size:16px}
-label{font-weight:700;font-size:13px;color:#475569;margin-bottom:6px;display:block;margin-top:16px}
-input[type="password"], select, input[type="file"] {width:100%;padding:10px;border:1px solid #cbd5e1;border-radius:8px;box-sizing:border-box;font-family:inherit;background:#fff;font-size:14px}
-button{margin-top:20px;width:100%;padding:14px;background:#2563eb;color:#fff;border:none;border-radius:10px;font-weight:600;cursor:pointer;transition:background 0.2s;font-size:15px}
-button:hover{background:#1d4ed8}
-.secondary{background:#10b981;margin-top:0}
-.secondary:hover{background:#059669}
-.log-panel{background:#1e293b;color:#cbd5e1;border-radius:10px;padding:12px;font-size:12px;height:160px;overflow-y:auto;margin-top:auto;font-family:monospace}
-.tab-header{display:flex;gap:15px;margin-bottom:10px;border-bottom:1px solid #334155;padding-bottom:8px}
-.tab-header span{cursor:pointer;font-weight:600;opacity:0.6;transition:0.2s}
-.tab-header span.active-tab{opacity:1;color:#38bdf8;border-bottom:2px solid #38bdf8}
-.tab{display:none}
-.tab.active{display:block}
-.log-item{margin-bottom:4px; border-bottom:1px solid #334155; padding-bottom:2px;}
-.log.ok{color:#4ade80} .log.info{color:#60a5fa} .log.error{color:#f87171}
-.file-box{border:2px dashed #cbd5e1; padding:15px; border-radius:8px; text-align:center; background:#f8fafc}
+  body { margin: 0; font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #f0f2f5; color: #1c1e21; }
+  
+  /* Üst Bar Tasarımı */
+  .header-bar { background: linear-gradient(90deg, #bf2d30 0%, #a61a1d 100%); color: white; padding: 15px 30px; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 2px 10px rgba(0,0,0,0.2); }
+  .header-bar h1 { margin: 0; font-size: 22px; font-weight: 600; letter-spacing: 0.5px; }
+  .badge { background: rgba(255,255,255,0.2); padding: 4px 10px; border-radius: 20px; font-size: 12px; }
+
+  .container { display: grid; grid-template-columns: 350px 1fr; gap: 20px; padding: 20px; height: calc(100vh - 70px); box-sizing: border-box; }
+
+  /* Sol Panel */
+  .sidebar { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); display: flex; flex-direction: column; gap: 15px; overflow-y: auto; }
+  
+  .input-group { margin-bottom: 5px; }
+  .input-group label { display: block; font-weight: 600; font-size: 13px; color: #65676b; margin-bottom: 6px; }
+  
+  input[type="password"], select { width: 100%; padding: 12px; border: 1px solid #dddfe2; border-radius: 8px; font-size: 14px; box-sizing: border-box; transition: border 0.2s; }
+  input:focus, select:focus { border-color: #bf2d30; outline: none; }
+
+  /* Özel Dosya Yükleme Alanı */
+  .file-upload-box { border: 2px dashed #bf2d30; background: #fff5f5; border-radius: 10px; padding: 20px; text-align: center; cursor: pointer; position: relative; transition: all 0.2s; }
+  .file-upload-box:hover { background: #ffebeb; }
+  .file-upload-box p { margin: 10px 0 0; font-size: 13px; color: #bf2d30; font-weight: 600; }
+  .file-upload-box input { position: absolute; top:0; left:0; width:100%; height:100%; opacity:0; cursor:pointer; }
+  
+  .btn-primary { background: #bf2d30; color: white; border: none; padding: 14px; border-radius: 8px; font-weight: 600; font-size: 15px; cursor: pointer; width: 100%; margin-top: 10px; transition: background 0.2s; }
+  .btn-primary:hover { background: #961518; }
+  
+  .log-console { background: #242526; color: #b0b3b8; padding: 15px; border-radius: 8px; font-family: 'Consolas', monospace; font-size: 11px; flex-grow: 1; overflow-y: auto; margin-top: 10px; max-height: 200px; }
+  .log-line { border-bottom: 1px solid #3a3b3c; padding: 4px 0; }
+  .log-ok { color: #42b72a; } .log-err { color: #f02849; } .log-inf { color: #1877f2; }
+
+  /* Sağ Panel */
+  .main-content { background: white; border-radius: 12px; padding: 30px; overflow-y: auto; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+  .empty-state { text-align: center; color: #65676b; margin-top: 100px; }
+  
+  .question-card { background: #f7f8fa; border: 1px solid #dddfe2; border-radius: 10px; padding: 20px; margin-bottom: 20px; }
+  .question-title { color: #1c1e21; font-weight: 700; margin-bottom: 15px; display: block; }
+  .option { padding: 8px 12px; margin-bottom: 5px; background: white; border: 1px solid #ebedf0; border-radius: 6px; font-size: 14px; color: #4b4c4f; }
+  
+  .answer-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 10px; margin-top: 20px; padding-top: 20px; border-top: 1px solid #eee; }
+  .answer-item { background: #f0f2f5; padding: 10px; border-radius: 6px; display: flex; align-items: center; justify-content: space-between; font-size: 13px; font-weight: 600; }
+  
+  .evaluation-box { background: #e7f3ff; color: #0c3d69; padding: 20px; border-radius: 8px; margin-top: 20px; line-height: 1.6; white-space: pre-wrap; border-left: 5px solid #1877f2; }
 </style>
 </head>
-
 <body>
+
+<div class="header-bar">
+  <h1>🛡️ Agesa Ürün Simülatörü</h1>
+  <span class="badge">V2.0 - PDF Edition</span>
+</div>
+
 <div class="container">
-
-<div class="panel">
-  <h2 style="margin-top:0;color:#0f172a">Agesa Ürün Analiz</h2>
-
-  <label>1. OpenAI API Key</label>
-  <input id="apiKey" type="password" placeholder="sk-...">
-
-  <label>2. Mod Seçimi</label>
-  <select id="modeSelect">
-    <option value="standard">Standart Test (Öğretici)</option>
-    <option value="hardcase">🛡️ Zorlu Vaka Analizi (Denetçi Modu)</option>
-  </select>
-
-  <label>3. Ürün Dokümanı (PDF)</label>
-  <div class="file-box">
-    <input id="pdfInput" type="file" accept="application/pdf">
-    <div style="font-size:11px; color:#64748b; margin-top:5px">Sadece metin içeren PDF'ler (Özel Şartlar vb.)</div>
-  </div>
-
-  <label>4. Ek Görseller (Varsa)</label>
-  <input id="images" type="file" accept="image/*" multiple>
-
-  <button onclick="startAnalysis()">Analizi Başlat</button>
-
-  <div class="log-panel">
-    <div class="tab-header">
-      <span onclick="switchTab('log')" id="logTabBtn" class="active-tab">Loglar</span>
-      <span onclick="switchTab('eval')" id="evalTabBtn">Yapay Zeka Raporu</span>
-    </div>
-    <div id="logTab" class="tab active"></div>
-    <div id="evalTab" class="tab"></div>
-  </div>
-</div>
-
-<div class="panel">
-  <div class="scrollable" id="output">
-    <div style="text-align:center; margin-top:60px; color:#94a3b8">
-      <h3>Hazır Bekleniyor...</h3>
-      <p>Sol taraftan PDF yükleyip analizi başlatın.</p>
-    </div>
-  </div>
   
-  <div id="actionArea" style="border-top:1px solid #e2e8f0; padding-top:15px; display:none">
-    <div id="answerPanel" style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:15px;"></div>
-    <button class="secondary" onclick="evaluateAnswers()">Cevaplarımı Değerlendir</button>
+  <div class="sidebar">
+    <div class="input-group">
+      <label>1. OpenAI API Key</label>
+      <input type="password" id="apiKey" placeholder="sk-..." />
+    </div>
+
+    <div class="input-group">
+      <label>2. Çalışma Modu</label>
+      <select id="modeSelect">
+        <option value="standard">🎓 Öğretici Mod (Genel Bilgi)</option>
+        <option value="hardcase">🔥 Denetçi Modu (Zorlu Vakalar)</option>
+      </select>
+    </div>
+
+    <div class="input-group">
+      <label>3. Ürün Dokümanı (PDF)</label>
+      <div class="file-upload-box">
+        <span style="font-size: 24px;">📄</span>
+        <p>PDF Yüklemek İçin Tıkla</p>
+        <input type="file" id="pdfInput" accept="application/pdf" onchange="handlePDFSelection(this)">
+      </div>
+    </div>
+
+    <div class="input-group">
+      <label>4. Ekran Görüntüsü (Opsiyonel)</label>
+      <input type="file" id="imgInput" accept="image/*" multiple>
+    </div>
+
+    <button class="btn-primary" onclick="startProcess()">ANALİZİ BAŞLAT</button>
+
+    <div class="log-console" id="logger">
+      <div class="log-line">Sistem hazır. PDF yükleyip başlayın...</div>
+    </div>
   </div>
-</div>
+
+  <div class="main-content" id="outputArea">
+    <div class="empty-state">
+      <h2>Henüz Analiz Yok</h2>
+      <p>Sol taraftan "PDF Yüklemek İçin Tıkla" alanına basıp dosyanızı seçin.</p>
+    </div>
+  </div>
 
 </div>
 
 <script>
-// PDF.js Worker'ı Tanımla
+// PDF Worker Ayarı
 pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
 
-let sessionKey, questions=[], userAnswers={};
+let sessionKey = "";
+let questions = [];
+let userAnswers = {};
 
-function log(msg, type="info"){
-  const d=document.createElement("div");
-  d.className="log-item log "+type;
-  d.textContent=`[${new Date().toLocaleTimeString()}] ${msg}`;
-  const logTab = document.getElementById("logTab");
-  logTab.appendChild(d);
-  logTab.scrollTop = logTab.scrollHeight;
+function log(msg, type) {
+  const box = document.getElementById("logger");
+  const div = document.createElement("div");
+  div.className = `log-line log-${type}`;
+  div.innerText = `> ${msg}`;
+  box.appendChild(div);
+  box.scrollTop = box.scrollHeight;
 }
 
-function switchTab(tab){
-  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
-  document.getElementById(tab+"Tab").classList.add("active");
-  document.querySelectorAll('.tab-header span').forEach(s=>s.classList.remove('active-tab'));
-  document.getElementById(tab+"TabBtn").classList.add("active-tab");
+// PDF Seçildiğinde Çalışacak Fonksiyon
+function handlePDFSelection(input) {
+  if (input.files && input.files[0]) {
+    log("PDF Seçildi: " + input.files[0].name, "inf");
+  }
 }
 
-function toBase64(file){
-  return new Promise(res=>{
-    const r=new FileReader();
-    r.onload=()=>res(r.result.split(",")[1]);
-    r.readAsDataURL(file);
-  });
-}
-
-// --- PDF OKUMA FONKSİYONU ---
-async function readPDF(file) {
-  log(`PDF Yükleniyor: ${file.name}`, "info");
+// PDF METİN ÇIKARMA (Otomatik)
+async function parsePDF(file) {
+  log("PDF okunuyor...", "inf");
   try {
-    const arrayBuffer = await file.arrayBuffer();
-    const pdf = await pdfjsLib.getDocument(arrayBuffer).promise;
+    const buffer = await file.arrayBuffer();
+    const pdf = await pdfjsLib.getDocument(buffer).promise;
     let fullText = "";
     
-    log(`Toplam ${pdf.numPages} sayfa tespit edildi. Okunuyor...`, "info");
-    
-    for (let i = 1; i <= pdf.numPages; i++) {
+    log(`Toplam ${pdf.numPages} sayfa tespit edildi.`, "inf");
+
+    for(let i=1; i<=pdf.numPages; i++){
       const page = await pdf.getPage(i);
-      const textContent = await page.getTextContent();
-      const pageText = textContent.items.map(item => item.str).join(" ");
-      fullText += `\n--- Sayfa ${i} ---\n` + pageText;
+      const content = await page.getTextContent();
+      const strings = content.items.map(item => item.str);
+      fullText += `\n--- Sayfa ${i} ---\n` + strings.join(" ");
     }
     
     if(fullText.length < 50) {
-      log("UYARI: PDF'ten metin okunamadı! Dosya resim formatında (taranmış) olabilir.", "error");
-      return null;
+      log("UYARI: PDF'ten metin okunamadı (Resim formatında olabilir).", "err");
+    } else {
+      log(`PDF başarıyla okundu (${fullText.length} karakter).`, "ok");
     }
-    
-    log("PDF başarıyla metne çevrildi.", "ok");
     return fullText;
-  } catch (err) {
-    log("PDF Okuma Hatası: " + err.message, "error");
-    throw err;
+  } catch(e) {
+    log("PDF Hatası: " + e.message, "err");
+    throw e;
   }
 }
 
-// --- ANA İŞLEM ---
-async function startAnalysis(){
-  const apiKeyInput = document.getElementById("apiKey").value.trim();
-  const pdfFile = document.getElementById("pdfInput").files[0];
-  const imgFiles = [...document.getElementById("images").files];
-  const mode = document.getElementById("modeSelect").value;
-  
+function toBase64(file) {
+  return new Promise((resolve) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result.split(',')[1]);
+    reader.readAsDataURL(file);
+  });
+}
+
+// ANA İŞLEM BAŞLATMA
+async function startProcess() {
   // Temizlik
-  document.getElementById("logTab").innerHTML="";
-  document.getElementById("evalTab").innerHTML="";
-  document.getElementById("actionArea").style.display="none";
+  document.getElementById("outputArea").innerHTML = '<div class="empty-state"><h3>Analiz Ediliyor...</h3><p>Lütfen bekleyiniz, yapay zeka dokümanı okuyor.</p></div>';
   questions = [];
   userAnswers = {};
 
-  // Validasyonlar
-  if(!apiKeyInput) { log("Lütfen API Key giriniz.", "error"); return; }
-  sessionKey = apiKeyInput;
-  
-  if(!pdfFile && imgFiles.length === 0) { log("Lütfen bir PDF dosyası seçiniz.", "error"); return; }
+  const key = document.getElementById("apiKey").value.trim();
+  const pdfFile = document.getElementById("pdfInput").files[0];
+  const imgFiles = document.getElementById("imgInput").files;
+  const mode = document.getElementById("modeSelect").value;
 
-  log("Süreç başlatıldı...", "ok");
+  if(!key) { log("Lütfen API Key giriniz!", "err"); return; }
+  sessionKey = key;
+
+  if(!pdfFile && imgFiles.length === 0) { log("Lütfen önce bir PDF dosyası seçin.", "err"); return; }
 
   try {
-    // 1. PDF OKUMA
     let extractedText = "";
-    if(pdfFile) {
-      extractedText = await readPDF(pdfFile);
-      if(!extractedText && imgFiles.length===0) return; // Metin yoksa ve resim yoksa dur
+    if(pdfFile) extractedText = await parsePDF(pdfFile);
+    
+    let imageList = [];
+    if(imgFiles.length > 0) {
+      for(let f of imgFiles) imageList.push(await toBase64(f));
+      log(`${imageList.length} görsel işlendi.`, "ok");
     }
 
-    // 2. PROMPT HAZIRLIĞI
-    let systemPrompt = "";
+    // Prompt Hazırlığı
+    let promptText = "";
     if(mode === "hardcase") {
-      systemPrompt = `Sen acımasız bir Sigorta Denetçisisin. 
-      Aşağıdaki dokümanı analiz et. Kullanıcıyı zorlamak için "İstisnalar", "Teminat Dışı Haller" ve "Limitler" üzerine kurulu 5 adet Vaka Analizi (Case Study) sorusu üret.
-      
-      Örnek tarz: "Ahmet Bey X oldu sanıyor ama poliçede Y maddesi var. Ödeme alır mı?"
-      Sorular zorlayıcı olmalı.`;
+      promptText = `Sen uzman bir sigorta denetçisisin. Amacın açıkları bulmak. 
+      Aşağıdaki sigorta dokümanını analiz et ve kullanıcıyı zorlayacak 5 adet "Vaka Analizi" (Case Study) sorusu üret.
+      Sorular özellikle "Kapsam Dışı Haller", "Özel Şartlar" ve "Limitler" ile ilgili olsun.
+      Basit tanım soruları sorma. Senaryo kur.`;
     } else {
-      systemPrompt = `Sen bir Sigorta Eğitmenisin. Aşağıdaki dokümanı analiz et. Ürünün temel özellikleri, kimleri kapsadığı ve teminatları hakkında 10 adet öğretici çoktan seçmeli soru üret.`;
+      promptText = `Bu sigorta ürününü analiz et. Ürünü öğrenmek isteyen bir personel için 10 adet kaliteli, öğretici çoktan seçmeli soru hazırla.`;
     }
 
-    const content = [
-      { 
-        type: "text", 
-        text: `${systemPrompt}
-        
-        FORMAT KURALI (KESİN):
-        Sadece geçerli bir JSON Array döndür. Markdown ('''json) kullanma.
-        
-        Örnek JSON Yapısı:
-        [
-          {
-            "question": "Soru metni...",
-            "options": ["A) ...", "B) ...", "C) ...", "D) ...", "E) ..."]
-          }
+    const messages = [
+      {
+        role: "user",
+        content: [
+          { type: "text", text: `${promptText}\n\nÇIKTI FORMATI: Sadece JSON Array döndür. Markdown kullanma. Format: [{"question":"...","options":["A)...","B)..."]}] \n\nDOKÜMAN İÇERİĞİ:\n${extractedText.substring(0, 40000)}` },
+          ...imageList.map(img => ({ type: "image_url", image_url: { url: `data:image/jpeg;base64,${img}` } }))
         ]
-        
-        İNCELENECEK METİN:
-        ${extractedText ? extractedText.substring(0, 50000) : "Metin yok, görsellere bak."}` 
-        // Not: 50.000 karakter sınırı koydum token limitini patlatmamak için.
       }
     ];
 
-    // Görsel varsa ekle
-    if(imgFiles.length > 0) {
-      const imgs = await Promise.all(imgFiles.map(toBase64));
-      imgs.forEach(i => content.push({type:"image_url",image_url:{url:"data:image/png;base64,"+i}}));
+    log("OpenAI'a gönderiliyor...", "inf");
+    
+    const response = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: { "Authorization": `Bearer ${sessionKey}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ model: "gpt-4o", messages: messages, temperature: 0.5 })
+    });
+
+    if(!response.ok) throw new Error("API Hatası: " + response.statusText);
+
+    const data = await response.json();
+    let content = data.choices[0].message.content.replace(/```json|```/g, "").trim();
+    
+    try {
+      let parsed = JSON.parse(content);
+      if(parsed.questions) parsed = parsed.questions;
+      if(parsed.sorular) parsed = parsed.sorular;
+      questions = parsed;
+    } catch(e) {
+      throw new Error("JSON Format Hatası. Tekrar deneyin.");
     }
 
-    // 3. API İSTEĞİ
-    log("Yapay Zeka soruları hazırlıyor (15-30sn sürebilir)...", "info");
-
-    const r = await fetch("https://api.openai.com/v1/chat/completions", {
-      method: "POST",
-      headers: { "Authorization": "Bearer " + sessionKey, "Content-Type": "application/json" },
-      body: JSON.stringify({ model: "gpt-4o", messages: [{ role: "user", content }], temperature: 0.5 })
-    });
-
-    if(!r.ok) throw new Error("API Hatası: " + r.statusText);
-
-    const data = await r.json();
-    let rawContent = data.choices[0].message.content;
-    
-    // Temizlik
-    rawContent = rawContent.replace(/```json/g, "").replace(/```/g, "").trim();
-    
-    let parsedData;
-    try { parsedData = JSON.parse(rawContent); } 
-    catch(e) { throw new Error("AI format hatası yaptı. Tekrar deneyin."); }
-
-    // Yapı Kontrolü
-    if(parsedData.questions) parsedData = parsedData.questions;
-    if(parsedData.sorular) parsedData = parsedData.sorular;
-    if(!Array.isArray(parsedData)) throw new Error("Gelen veri dizi formatında değil.");
-
-    questions = parsedData;
-    log(`Başarılı! ${questions.length} soru oluşturuldu.`, "ok");
-    
+    log(`${questions.length} soru oluşturuldu.`, "ok");
     renderUI();
 
-  } catch (err) {
-    console.error(err);
-    log("HATA: " + err.message, "error");
+  } catch(e) {
+    log("Hata: " + e.message, "err");
+    document.getElementById("outputArea").innerHTML = `<div class="empty-state" style="color:red"><h3>Hata Oluştu</h3><p>${e.message}</p></div>`;
   }
 }
 
-function renderUI(){
-  const out = document.getElementById("output");
-  const modeName = document.getElementById("modeSelect").options[document.getElementById("modeSelect").selectedIndex].text;
-  
-  out.innerHTML = `<h2 style="color:#2563eb; margin-bottom:20px">${modeName}</h2>`;
+function renderUI() {
+  const area = document.getElementById("outputArea");
+  area.innerHTML = `<h2>Sorular</h2>`;
   
   questions.forEach((q, i) => {
-    out.innerHTML += `
-    <div class="question">
-      <b>${i+1}. ${q.question}</b>
-      ${q.options.map(opt => `<div style="padding:5px 0; border-top:1px solid #eee; color:#334155">${opt}</div>`).join('')}
-    </div>`;
+    area.innerHTML += `
+      <div class="question-card">
+        <span class="question-title">${i+1}. ${q.question}</span>
+        ${q.options.map(opt => `<div class="option">${opt}</div>`).join('')}
+        
+        <div class="answer-grid" style="border:none; padding:0; margin-top:10px">
+           ${['A','B','C','D','E'].map(L => `
+             <div class="answer-item">
+               <label style="cursor:pointer; width:100%; display:block">
+                 <input type="radio" name="q${i}" onchange="userAnswers[${i+1}]='${L}'"> ${L}
+               </label>
+             </div>
+           `).join('')}
+        </div>
+      </div>
+    `;
   });
 
-  // Cevap panelini hazırla
-  const ansPanel = document.getElementById("answerPanel");
-  ansPanel.innerHTML = "";
-  questions.forEach((_, i) => {
-    ansPanel.innerHTML += `
-    <div style="background:#f1f5f9; padding:8px 12px; border-radius:6px; border:1px solid #cbd5e1; display:flex; align-items:center; gap:5px">
-      <strong>${i+1}</strong>
-      ${['A','B','C','D','E'].map(L => `<label style="margin:0;cursor:pointer;font-weight:normal"><input type="radio" name="q${i}" onchange="userAnswers[${i+1}]='${L}'"> ${L}</label>`).join('')}
-    </div>`;
-  });
-
-  document.getElementById("actionArea").style.display = "block";
+  area.innerHTML += `<button class="btn-primary" style="background:#10b981" onclick="evaluateAnswers()">CEVAPLARI DEĞERLENDİR</button>`;
+  area.innerHTML += `<div id="evalBox"></div>`;
 }
 
-async function evaluateAnswers(){
-  log("Cevaplar değerlendiriliyor...", "info");
+async function evaluateAnswers() {
+  log("Cevaplar değerlendiriliyor...", "inf");
+  const prompt = `Sorular: ${JSON.stringify(questions)}\nKullanıcı Cevapları: ${JSON.stringify(userAnswers)}\n\nLütfen detaylı analiz yap. Doğru cevapları açıkla ve kullanıcı hatalarını düzelt. 100 üzerinden puan ver.`;
   
-  const prompt = `
-  ANALİZ RAPORU:
-  Sorular: ${JSON.stringify(questions)}
-  Kullanıcı Cevapları: ${JSON.stringify(userAnswers)}
-  
-  GÖREV:
-  1. Doğru cevapları açıkla.
-  2. Kullanıcının hatalarını "Poliçe Maddesi/Mantığı" ile düzelt.
-  3. 100 üzerinden puan ver.
-  4. Profesyonel ve yapıcı ol.
-  `;
-
-  try {
-    const r = await fetch("https://api.openai.com/v1/chat/completions", {
+  const response = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
-      headers: { "Authorization": "Bearer " + sessionKey, "Content-Type": "application/json" },
+      headers: { "Authorization": `Bearer ${sessionKey}`, "Content-Type": "application/json" },
       body: JSON.stringify({ model: "gpt-4o", messages: [{ role: "user", content: prompt }], temperature: 0.3 })
-    });
+  });
 
-    const data = await r.json();
-    document.getElementById("evalTab").innerHTML = `<pre style="white-space:pre-wrap; font-family:inherit; line-height:1.6">${data.choices[0].message.content}</pre>`;
-    switchTab("eval");
-    log("Değerlendirme tamamlandı.", "ok");
-  } catch(e) {
-    log("Değerlendirme hatası: " + e.message, "error");
-  }
+  const data = await response.json();
+  document.getElementById("evalBox").innerHTML = `<div class="evaluation-box">${data.choices[0].message.content}</div>`;
+  log("Değerlendirme tamamlandı.", "ok");
 }
 </script>
 </body>
