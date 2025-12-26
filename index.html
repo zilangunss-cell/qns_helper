@@ -2,33 +2,31 @@
 <html lang="tr">
 <head>
 <meta charset="UTF-8">
-<title>Agesa Ürün Uzmanlık Simülatörü</title>
+<title>Agesa Ürün Simülatörü (PDF Destekli)</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
 
 <style>
-body{margin:0;font-family:system-ui;background:#f2f4f7;color:#333}
+body{margin:0;font-family:-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;background:#f2f4f7;color:#333}
 .container{display:grid;grid-template-columns:40% 60%;height:100vh;gap:16px;padding:16px;box-sizing:border-box}
 .panel{background:#fff;border-radius:14px;padding:20px;box-shadow:0 6px 20px rgba(0,0,0,.08);position:relative;display:flex;flex-direction:column}
-.scrollable{overflow-y:auto;flex-grow:1}
-.question{border:1px solid #e5e7eb;border-radius:12px;padding:16px;margin-bottom:16px;background:#fafafa}
-.question b{color:#1e3a8a;display:block;margin-bottom:8px}
-.options{margin-top:10px}
-label{font-weight:600;font-size:13px;color:#64748b;margin-bottom:4px;display:block;margin-top:12px}
-input[type="text"], input[type="password"], textarea, select {width:100%;padding:10px;border:1px solid #cbd5e1;border-radius:8px;box-sizing:border-box;font-family:inherit}
-textarea{resize:vertical;min-height:80px}
-button{margin-top:16px;width:100%;padding:12px;background:#2563eb;color:#fff;border:none;border-radius:10px;font-weight:600;cursor:pointer;transition:background 0.2s}
+.scrollable{overflow-y:auto;flex-grow:1;padding-right:5px}
+.question{border:1px solid #e2e8f0;border-radius:12px;padding:16px;margin-bottom:16px;background:#f8fafc}
+.question b{color:#1e3a8a;display:block;margin-bottom:10px;font-size:16px}
+label{font-weight:700;font-size:13px;color:#475569;margin-bottom:6px;display:block;margin-top:16px}
+input[type="password"], select, input[type="file"] {width:100%;padding:10px;border:1px solid #cbd5e1;border-radius:8px;box-sizing:border-box;font-family:inherit;background:#fff;font-size:14px}
+button{margin-top:20px;width:100%;padding:14px;background:#2563eb;color:#fff;border:none;border-radius:10px;font-weight:600;cursor:pointer;transition:background 0.2s;font-size:15px}
 button:hover{background:#1d4ed8}
-.secondary{background:#10b981}
+.secondary{background:#10b981;margin-top:0}
 .secondary:hover{background:#059669}
-.log-panel{background:#0f172a;color:#e5e7eb;border-radius:10px;padding:10px;font-size:12px;height:150px;overflow-y:auto;margin-top:auto}
-.tab-header{display:flex;gap:10px;margin-bottom:8px;border-bottom:1px solid #334155;padding-bottom:5px}
-.tab-header span{cursor:pointer;font-weight:600;opacity:0.6}
-.tab-header span.active-tab{opacity:1;color:#38bdf8}
+.log-panel{background:#1e293b;color:#cbd5e1;border-radius:10px;padding:12px;font-size:12px;height:160px;overflow-y:auto;margin-top:auto;font-family:monospace}
+.tab-header{display:flex;gap:15px;margin-bottom:10px;border-bottom:1px solid #334155;padding-bottom:8px}
+.tab-header span{cursor:pointer;font-weight:600;opacity:0.6;transition:0.2s}
+.tab-header span.active-tab{opacity:1;color:#38bdf8;border-bottom:2px solid #38bdf8}
 .tab{display:none}
 .tab.active{display:block}
-.log.ok{color:#4ade80}
-.log.info{color:#38bdf8}
-.log.error{color:#f87171}
-hr{border:0;border-top:1px solid #e2e8f0;margin:20px 0}
+.log-item{margin-bottom:4px; border-bottom:1px solid #334155; padding-bottom:2px;}
+.log.ok{color:#4ade80} .log.info{color:#60a5fa} .log.error{color:#f87171}
+.file-box{border:2px dashed #cbd5e1; padding:15px; border-radius:8px; text-align:center; background:#f8fafc}
 </style>
 </head>
 
@@ -36,29 +34,32 @@ hr{border:0;border-top:1px solid #e2e8f0;margin:20px 0}
 <div class="container">
 
 <div class="panel">
-  <h2 style="margin-top:0;color:#111">Ürün Analiz & Simülasyon</h2>
+  <h2 style="margin-top:0;color:#0f172a">Agesa Ürün Analiz</h2>
 
-  <label>OpenAI API Key</label>
+  <label>1. OpenAI API Key</label>
   <input id="apiKey" type="password" placeholder="sk-...">
 
-  <label>Simülasyon Modu</label>
+  <label>2. Mod Seçimi</label>
   <select id="modeSelect">
-    <option value="standard">Standart Test (Genel Bilgi)</option>
-    <option value="hardcase">🛡️ Zorlu Vaka Analizi (İstisnalar & Redler)</option>
+    <option value="standard">Standart Test (Öğretici)</option>
+    <option value="hardcase">🛡️ Zorlu Vaka Analizi (Denetçi Modu)</option>
   </select>
 
-  <label>Ürün Metni / Özel Şartlar (PDF'ten Kopyala)</label>
-  <textarea id="productText" rows="6" placeholder="Örn: Agesa Her İhtimalin Sigortası özel şartlar metnini buraya yapıştır..."></textarea>
+  <label>3. Ürün Dokümanı (PDF)</label>
+  <div class="file-box">
+    <input id="pdfInput" type="file" accept="application/pdf">
+    <div style="font-size:11px; color:#64748b; margin-top:5px">Sadece metin içeren PDF'ler (Özel Şartlar vb.)</div>
+  </div>
 
-  <label>Veya Ürün Ekran Görüntüleri (max 5)</label>
+  <label>4. Ek Görseller (Varsa)</label>
   <input id="images" type="file" accept="image/*" multiple>
 
-  <button onclick="generateQuestions()">Analizi Başlat</button>
+  <button onclick="startAnalysis()">Analizi Başlat</button>
 
   <div class="log-panel">
     <div class="tab-header">
-      <span onclick="switchTab('log')" id="logTabBtn" class="active-tab">Sistem Log</span>
-      <span onclick="switchTab('eval')" id="evalTabBtn">Yapay Zeka Yorumu</span>
+      <span onclick="switchTab('log')" id="logTabBtn" class="active-tab">Loglar</span>
+      <span onclick="switchTab('eval')" id="evalTabBtn">Yapay Zeka Raporu</span>
     </div>
     <div id="logTab" class="tab active"></div>
     <div id="evalTab" class="tab"></div>
@@ -67,25 +68,29 @@ hr{border:0;border-top:1px solid #e2e8f0;margin:20px 0}
 
 <div class="panel">
   <div class="scrollable" id="output">
-    <h2 style="margin-top:0">Simülasyon Ekranı</h2>
-    <p style="color:#666;text-align:center;margin-top:50px">Henüz bir analiz başlatılmadı.<br>Soldaki panelden veri girerek süreci başlatın.</p>
+    <div style="text-align:center; margin-top:60px; color:#94a3b8">
+      <h3>Hazır Bekleniyor...</h3>
+      <p>Sol taraftan PDF yükleyip analizi başlatın.</p>
+    </div>
   </div>
   
-  <div style="border-top:1px solid #eee; padding-top:10px">
-    <div id="answerPanel" style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:10px;"></div>
-    <button class="secondary" id="evalBtn" onclick="evaluateAnswers()" style="display:none">Cevaplarımı Değerlendir</button>
+  <div id="actionArea" style="border-top:1px solid #e2e8f0; padding-top:15px; display:none">
+    <div id="answerPanel" style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:15px;"></div>
+    <button class="secondary" onclick="evaluateAnswers()">Cevaplarımı Değerlendir</button>
   </div>
 </div>
 
 </div>
 
 <script>
-let sessionKey, questions=[];
-let userAnswers={};
+// PDF.js Worker'ı Tanımla
+pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
 
-function log(msg,type="info"){
+let sessionKey, questions=[], userAnswers={};
+
+function log(msg, type="info"){
   const d=document.createElement("div");
-  d.className="log "+type;
+  d.className="log-item log "+type;
   d.textContent=`[${new Date().toLocaleTimeString()}] ${msg}`;
   const logTab = document.getElementById("logTab");
   logTab.appendChild(d);
@@ -93,12 +98,9 @@ function log(msg,type="info"){
 }
 
 function switchTab(tab){
-  document.getElementById("logTab").classList.remove("active");
-  document.getElementById("evalTab").classList.remove("active");
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
   document.getElementById(tab+"Tab").classList.add("active");
-  
-  document.getElementById("logTabBtn").classList.remove("active-tab");
-  document.getElementById("evalTabBtn").classList.remove("active-tab");
+  document.querySelectorAll('.tab-header span').forEach(s=>s.classList.remove('active-tab'));
   document.getElementById(tab+"TabBtn").classList.add("active-tab");
 }
 
@@ -110,265 +112,199 @@ function toBase64(file){
   });
 }
 
-// --- ANA FONKSİYON ---
-async function generateQuestions(){
-  document.getElementById("logTab").innerHTML="";
-  document.getElementById("evalTab").innerHTML="";
-  document.getElementById("evalBtn").style.display="none";
-  
-  sessionKey=document.getElementById("apiKey").value;
-  const textVal = document.getElementById("productText").value;
-  const files=[...document.getElementById("images").files];
-  const mode = document.getElementById("modeSelect").value;
-   
-  if(!sessionKey){ 
-    log("Lütfen API Key giriniz.", "error"); 
-    return; 
-  }
-  
-  if(files.length === 0 && textVal.trim() === ""){
-    log("Lütfen en az bir resim yükleyin VEYA ürün metni yapıştırın.", "error");
-    return;
-  }
-   
-  log("Analiz başlatılıyor...", "ok");
-
+// --- PDF OKUMA FONKSİYONU ---
+async function readPDF(file) {
+  log(`PDF Yükleniyor: ${file.name}`, "info");
   try {
-      let content = [];
-      
-      // 1. Mod'a göre Sistem Talimatı Hazırla
-      let systemPrompt = "";
-      if(mode === "hardcase") {
-        systemPrompt = `Sen acımasız bir sigorta denetçisisin (Auditor). 
-        Verilen sigorta ürünü metnini/görsellerini analiz et.
-        Amacın kullanıcının "İstisnalar", "Teminat Dışı Haller" ve "Özel Şartlar" konusundaki bilgisini zorlamak.
-        
-        Bana 5 adet "Case Study" (Vaka Analizi) sorusu üret.
-        Sorular "Aşağıdakilerden hangisi kapsamdadır?" gibi basit OLMASIN.
-        Örnek format: "Ahmet Bey X durumunu yaşadı, Y belgesi eksik ama Z şartı var. Poliçe ödeme yapar mı?"
-        
-        Şıklar detaylı ve çeldirici olsun.`;
-      } else {
-        systemPrompt = `Bu sigorta ürününü analiz et. Ürünün genel kapsamı, limitleri ve özellikleri hakkında 10 adet öğretici test sorusu üret.`;
-      }
-
-      // 2. Format Kuralı (Her iki mod için de geçerli)
-      const formatInstruction = `
-      ÇIKTI FORMATI KURALI (KESİN):
-      Sadece ve sadece bir JSON Array (Dizi) döndür. Markdown yok.
-      Format:
-      [
-        {
-          "question": "Soru metni...",
-          "options": ["A) ...", "B) ...", "C) ...", "D) ...", "E) ..."]
-        }
-      ]`;
-
-      content.push({ type: "text", text: systemPrompt + "\n\n" + formatInstruction });
-
-      // 3. Kullanıcı Metni Varsa Ekle
-      if(textVal.trim() !== "") {
-        content.push({ type: "text", text: "ÜRÜN METNİ / POLİÇE DETAYLARI:\n" + textVal });
-      }
-
-      // 4. Görseller Varsa Ekle
-      if(files.length > 0) {
-        const imgs = await Promise.all(files.map(toBase64));
-        log("Görseller işlendi", "ok");
-        imgs.forEach(i => {
-           content.push({type:"image_url",image_url:{url:"data:image/png;base64,"+i}});
-        });
-      }
-
-      // API ÇAĞRISI
-      const r=await fetch("https://api.openai.com/v1/chat/completions",{
-        method:"POST",
-        headers:{Authorization:"Bearer "+sessionKey,"Content-Type":"application/json"},
-        body:JSON.stringify({model:"gpt-4o",messages:[{role:"user",content}],temperature:0.7})
-      });
-
-      if (!r.ok) { throw new Error("API Hatası: " + r.statusText); }
-
-      const data = await r.json();
-      let raw = data.choices[0].message.content;
-      
-      raw = raw.replace(/```json/g, "").replace(/```/g, "").trim();
-
-      let parsedData;
-      try {
-        parsedData = JSON.parse(raw);
-      } catch (e) {
-        // Bazen text olarak gelebilir, tekrar dene veya hata bas
-        throw new Error("AI geçerli JSON üretemedi. Lütfen tekrar deneyin.");
-      }
-
-      // Dizi/Obje kontrolü
-      if (!Array.isArray(parsedData) && parsedData.questions) parsedData = parsedData.questions;
-      if (!Array.isArray(parsedData) && parsedData.sorular) parsedData = parsedData.sorular;
-
-      if (!Array.isArray(parsedData)) {
-          throw new Error("Format hatası. Gelen veri dizi değil.");
-      }
-
-      questions = parsedData;
-      userAnswers = {}; // Önceki cevapları sıfırla
-      log(`Başarılı: ${questions.length} adet simülasyon sorusu üretildi.`, "ok");
-      
-      renderQuestions();
-      renderAnswerPanel();
-      document.getElementById("evalBtn").style.display="block";
-
+    const arrayBuffer = await file.arrayBuffer();
+    const pdf = await pdfjsLib.getDocument(arrayBuffer).promise;
+    let fullText = "";
+    
+    log(`Toplam ${pdf.numPages} sayfa tespit edildi. Okunuyor...`, "info");
+    
+    for (let i = 1; i <= pdf.numPages; i++) {
+      const page = await pdf.getPage(i);
+      const textContent = await page.getTextContent();
+      const pageText = textContent.items.map(item => item.str).join(" ");
+      fullText += `\n--- Sayfa ${i} ---\n` + pageText;
+    }
+    
+    if(fullText.length < 50) {
+      log("UYARI: PDF'ten metin okunamadı! Dosya resim formatında (taranmış) olabilir.", "error");
+      return null;
+    }
+    
+    log("PDF başarıyla metne çevrildi.", "ok");
+    return fullText;
   } catch (err) {
-      console.error(err);
-      log("HATA: " + err.message, "error");
+    log("PDF Okuma Hatası: " + err.message, "error");
+    throw err;
   }
 }
 
-function renderQuestions(){
-  const o=document.getElementById("output");
-  o.innerHTML=`<h2>${document.getElementById("modeSelect").options[document.getElementById("modeSelect").selectedIndex].text}</h2>`;
-  questions.forEach((q,i)=>{
-  o.innerHTML+=`
+// --- ANA İŞLEM ---
+async function startAnalysis(){
+  const apiKeyInput = document.getElementById("apiKey").value.trim();
+  const pdfFile = document.getElementById("pdfInput").files[0];
+  const imgFiles = [...document.getElementById("images").files];
+  const mode = document.getElementById("modeSelect").value;
+  
+  // Temizlik
+  document.getElementById("logTab").innerHTML="";
+  document.getElementById("evalTab").innerHTML="";
+  document.getElementById("actionArea").style.display="none";
+  questions = [];
+  userAnswers = {};
+
+  // Validasyonlar
+  if(!apiKeyInput) { log("Lütfen API Key giriniz.", "error"); return; }
+  sessionKey = apiKeyInput;
+  
+  if(!pdfFile && imgFiles.length === 0) { log("Lütfen bir PDF dosyası seçiniz.", "error"); return; }
+
+  log("Süreç başlatıldı...", "ok");
+
+  try {
+    // 1. PDF OKUMA
+    let extractedText = "";
+    if(pdfFile) {
+      extractedText = await readPDF(pdfFile);
+      if(!extractedText && imgFiles.length===0) return; // Metin yoksa ve resim yoksa dur
+    }
+
+    // 2. PROMPT HAZIRLIĞI
+    let systemPrompt = "";
+    if(mode === "hardcase") {
+      systemPrompt = `Sen acımasız bir Sigorta Denetçisisin. 
+      Aşağıdaki dokümanı analiz et. Kullanıcıyı zorlamak için "İstisnalar", "Teminat Dışı Haller" ve "Limitler" üzerine kurulu 5 adet Vaka Analizi (Case Study) sorusu üret.
+      
+      Örnek tarz: "Ahmet Bey X oldu sanıyor ama poliçede Y maddesi var. Ödeme alır mı?"
+      Sorular zorlayıcı olmalı.`;
+    } else {
+      systemPrompt = `Sen bir Sigorta Eğitmenisin. Aşağıdaki dokümanı analiz et. Ürünün temel özellikleri, kimleri kapsadığı ve teminatları hakkında 10 adet öğretici çoktan seçmeli soru üret.`;
+    }
+
+    const content = [
+      { 
+        type: "text", 
+        text: `${systemPrompt}
+        
+        FORMAT KURALI (KESİN):
+        Sadece geçerli bir JSON Array döndür. Markdown ('''json) kullanma.
+        
+        Örnek JSON Yapısı:
+        [
+          {
+            "question": "Soru metni...",
+            "options": ["A) ...", "B) ...", "C) ...", "D) ...", "E) ..."]
+          }
+        ]
+        
+        İNCELENECEK METİN:
+        ${extractedText ? extractedText.substring(0, 50000) : "Metin yok, görsellere bak."}` 
+        // Not: 50.000 karakter sınırı koydum token limitini patlatmamak için.
+      }
+    ];
+
+    // Görsel varsa ekle
+    if(imgFiles.length > 0) {
+      const imgs = await Promise.all(imgFiles.map(toBase64));
+      imgs.forEach(i => content.push({type:"image_url",image_url:{url:"data:image/png;base64,"+i}}));
+    }
+
+    // 3. API İSTEĞİ
+    log("Yapay Zeka soruları hazırlıyor (15-30sn sürebilir)...", "info");
+
+    const r = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: { "Authorization": "Bearer " + sessionKey, "Content-Type": "application/json" },
+      body: JSON.stringify({ model: "gpt-4o", messages: [{ role: "user", content }], temperature: 0.5 })
+    });
+
+    if(!r.ok) throw new Error("API Hatası: " + r.statusText);
+
+    const data = await r.json();
+    let rawContent = data.choices[0].message.content;
+    
+    // Temizlik
+    rawContent = rawContent.replace(/```json/g, "").replace(/```/g, "").trim();
+    
+    let parsedData;
+    try { parsedData = JSON.parse(rawContent); } 
+    catch(e) { throw new Error("AI format hatası yaptı. Tekrar deneyin."); }
+
+    // Yapı Kontrolü
+    if(parsedData.questions) parsedData = parsedData.questions;
+    if(parsedData.sorular) parsedData = parsedData.sorular;
+    if(!Array.isArray(parsedData)) throw new Error("Gelen veri dizi formatında değil.");
+
+    questions = parsedData;
+    log(`Başarılı! ${questions.length} soru oluşturuldu.`, "ok");
+    
+    renderUI();
+
+  } catch (err) {
+    console.error(err);
+    log("HATA: " + err.message, "error");
+  }
+}
+
+function renderUI(){
+  const out = document.getElementById("output");
+  const modeName = document.getElementById("modeSelect").options[document.getElementById("modeSelect").selectedIndex].text;
+  
+  out.innerHTML = `<h2 style="color:#2563eb; margin-bottom:20px">${modeName}</h2>`;
+  
+  questions.forEach((q, i) => {
+    out.innerHTML += `
     <div class="question">
-    <b>SORU ${i+1}:</b>
-    <div style="margin-bottom:10px">${q.question}</div>
-    ${q.options.map(op=>`<div class="option" style="padding:4px 0; border-bottom:1px solid #eee">${op}</div>`).join("")}
+      <b>${i+1}. ${q.question}</b>
+      ${q.options.map(opt => `<div style="padding:5px 0; border-top:1px solid #eee; color:#334155">${opt}</div>`).join('')}
     </div>`;
   });
-}
 
-function renderAnswerPanel(){
-  const p=document.getElementById("answerPanel");
-  p.innerHTML="";
-  questions.forEach((_,i)=>{
-  p.innerHTML+=`
-    <div style="background:#f1f5f9; padding:5px 10px; border-radius:6px; font-size:14px; display:flex; align-items:center; gap:5px">
-    <strong>${i+1}.</strong>
-    ${["A","B","C","D","E"].map(l=>`
-      <label style="margin:0; font-weight:normal; cursor:pointer">
-      <input type="radio" name="q${i}" onchange="userAnswers[${i+1}]='${l}'" style="width:auto;margin:0">${l}
-      </label>`).join(" ")}
+  // Cevap panelini hazırla
+  const ansPanel = document.getElementById("answerPanel");
+  ansPanel.innerHTML = "";
+  questions.forEach((_, i) => {
+    ansPanel.innerHTML += `
+    <div style="background:#f1f5f9; padding:8px 12px; border-radius:6px; border:1px solid #cbd5e1; display:flex; align-items:center; gap:5px">
+      <strong>${i+1}</strong>
+      ${['A','B','C','D','E'].map(L => `<label style="margin:0;cursor:pointer;font-weight:normal"><input type="radio" name="q${i}" onchange="userAnswers[${i+1}]='${L}'"> ${L}</label>`).join('')}
     </div>`;
   });
+
+  document.getElementById("actionArea").style.display = "block";
 }
 
-// --- DÜZELTİLMİŞ ANA FONKSİYON ---
-async function generateQuestions(){
-  document.getElementById("logTab").innerHTML="";
-  document.getElementById("evalTab").innerHTML="";
-  document.getElementById("evalBtn").style.display="none";
+async function evaluateAnswers(){
+  log("Cevaplar değerlendiriliyor...", "info");
   
-  // 1. API KEY TEMİZLİK VE KONTROLÜ
-  let rawKey = document.getElementById("apiKey").value;
-  // Baştaki/sondaki boşlukları sil
-  sessionKey = rawKey ? rawKey.trim() : "";
-
-  const textVal = document.getElementById("productText").value;
-  const files=[...document.getElementById("images").files];
-  const mode = document.getElementById("modeSelect").value;
-   
-  if(!sessionKey){ 
-    log("Lütfen API Key giriniz.", "error"); 
-    return; 
-  }
-
-  // Türkçe karakter veya geçersiz sembol kontrolü
-  if (/[^\x00-\x7F]/.test(sessionKey)) {
-    log("KRİTİK HATA: API Key kutusunda Türkçe karakter veya geçersiz sembol var. Lütfen silip tekrar yapıştırın.", "error");
-    return;
-  }
+  const prompt = `
+  ANALİZ RAPORU:
+  Sorular: ${JSON.stringify(questions)}
+  Kullanıcı Cevapları: ${JSON.stringify(userAnswers)}
   
-  if(files.length === 0 && textVal.trim() === ""){
-    log("Lütfen en az bir resim yükleyin VEYA ürün metni yapıştırın.", "error");
-    return;
-  }
-   
-  log("Analiz başlatılıyor...", "ok");
+  GÖREV:
+  1. Doğru cevapları açıkla.
+  2. Kullanıcının hatalarını "Poliçe Maddesi/Mantığı" ile düzelt.
+  3. 100 üzerinden puan ver.
+  4. Profesyonel ve yapıcı ol.
+  `;
 
   try {
-      let content = [];
-      
-      let systemPrompt = "";
-      if(mode === "hardcase") {
-        systemPrompt = `Sen acımasız bir sigorta denetçisisin (Auditor). 
-        Verilen sigorta ürünü metnini/görsellerini analiz et.
-        Amacın kullanıcının "İstisnalar", "Teminat Dışı Haller" ve "Özel Şartlar" konusundaki bilgisini zorlamak.
-        
-        Bana 5 adet "Case Study" (Vaka Analizi) sorusu üret.
-        Sorular "Aşağıdakilerden hangisi kapsamdadır?" gibi basit OLMASIN.
-        Örnek format: "Ahmet Bey X durumunu yaşadı, Y belgesi eksik ama Z şartı var. Poliçe ödeme yapar mı?"
-        
-        Şıklar detaylı ve çeldirici olsun.`;
-      } else {
-        systemPrompt = `Bu sigorta ürününü analiz et. Ürünün genel kapsamı, limitleri ve özellikleri hakkında 10 adet öğretici test sorusu üret.`;
-      }
+    const r = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: { "Authorization": "Bearer " + sessionKey, "Content-Type": "application/json" },
+      body: JSON.stringify({ model: "gpt-4o", messages: [{ role: "user", content: prompt }], temperature: 0.3 })
+    });
 
-      const formatInstruction = `
-      ÇIKTI FORMATI KURALI (KESİN):
-      Sadece ve sadece bir JSON Array (Dizi) döndür. Markdown yok.
-      Format:
-      [
-        {
-          "question": "Soru metni...",
-          "options": ["A) ...", "B) ...", "C) ...", "D) ...", "E) ..."]
-        }
-      ]`;
-
-      content.push({ type: "text", text: systemPrompt + "\n\n" + formatInstruction });
-
-      if(textVal.trim() !== "") {
-        content.push({ type: "text", text: "ÜRÜN METNİ / POLİÇE DETAYLARI:\n" + textVal });
-      }
-
-      if(files.length > 0) {
-        const imgs = await Promise.all(files.map(toBase64));
-        log("Görseller işlendi", "ok");
-        imgs.forEach(i => {
-           content.push({type:"image_url",image_url:{url:"data:image/png;base64,"+i}});
-        });
-      }
-
-      const r=await fetch("https://api.openai.com/v1/chat/completions",{
-        method:"POST",
-        headers:{Authorization:"Bearer "+sessionKey,"Content-Type":"application/json"},
-        body:JSON.stringify({model:"gpt-4o",messages:[{role:"user",content}],temperature:0.7})
-      });
-
-      if (!r.ok) { 
-          const errData = await r.json().catch(()=>({}));
-          throw new Error("API Hatası: " + r.status + " - " + (errData.error?.message || r.statusText)); 
-      }
-
-      const data = await r.json();
-      let raw = data.choices[0].message.content;
-      
-      raw = raw.replace(/```json/g, "").replace(/```/g, "").trim();
-
-      let parsedData;
-      try {
-        parsedData = JSON.parse(raw);
-      } catch (e) {
-        throw new Error("AI geçerli JSON üretemedi. Lütfen tekrar deneyin.");
-      }
-
-      if (!Array.isArray(parsedData) && parsedData.questions) parsedData = parsedData.questions;
-      if (!Array.isArray(parsedData) && parsedData.sorular) parsedData = parsedData.sorular;
-
-      if (!Array.isArray(parsedData)) {
-          throw new Error("Format hatası. Gelen veri dizi değil.");
-      }
-
-      questions = parsedData;
-      userAnswers = {}; 
-      log(`Başarılı: ${questions.length} adet simülasyon sorusu üretildi.`, "ok");
-      
-      renderQuestions();
-      renderAnswerPanel();
-      document.getElementById("evalBtn").style.display="block";
-
-  } catch (err) {
-      console.error(err);
-      log("HATA: " + err.message, "error");
+    const data = await r.json();
+    document.getElementById("evalTab").innerHTML = `<pre style="white-space:pre-wrap; font-family:inherit; line-height:1.6">${data.choices[0].message.content}</pre>`;
+    switchTab("eval");
+    log("Değerlendirme tamamlandı.", "ok");
+  } catch(e) {
+    log("Değerlendirme hatası: " + e.message, "error");
   }
 }
 </script>
