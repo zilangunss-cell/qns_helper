@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Agesa Ürün Simülatörü - V3 (Detaylı)</title>
+<title>Agesa Ürün Simülatörü - V4 (Kanıtlı)</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
 
 <style>
@@ -15,49 +15,52 @@
 
   .container { display: grid; grid-template-columns: 350px 1fr; gap: 20px; padding: 20px; height: calc(100vh - 70px); box-sizing: border-box; }
 
+  /* Sol Panel */
   .sidebar { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); display: flex; flex-direction: column; gap: 15px; overflow-y: auto; }
   
-  .input-group { margin-bottom: 5px; }
   .input-group label { display: block; font-weight: 600; font-size: 13px; color: #65676b; margin-bottom: 6px; }
-  
-  input[type="password"], select { width: 100%; padding: 12px; border: 1px solid #dddfe2; border-radius: 8px; font-size: 14px; box-sizing: border-box; transition: border 0.2s; }
-  input:focus, select:focus { border-color: #bf2d30; outline: none; }
+  input[type="password"], select { width: 100%; padding: 12px; border: 1px solid #dddfe2; border-radius: 8px; font-size: 14px; box-sizing: border-box; }
 
   .file-upload-box { border: 2px dashed #bf2d30; background: #fff5f5; border-radius: 10px; padding: 20px; text-align: center; cursor: pointer; position: relative; transition: all 0.2s; }
   .file-upload-box:hover { background: #ffebeb; }
-  .file-upload-box p { margin: 10px 0 0; font-size: 13px; color: #bf2d30; font-weight: 600; }
   .file-upload-box input { position: absolute; top:0; left:0; width:100%; height:100%; opacity:0; cursor:pointer; }
   
-  .file-list { font-size: 12px; color: #666; margin-top: 5px; text-align: left; }
-
-  .btn-primary { background: #bf2d30; color: white; border: none; padding: 14px; border-radius: 8px; font-weight: 600; font-size: 15px; cursor: pointer; width: 100%; margin-top: 10px; transition: background 0.2s; }
+  .btn-primary { background: #bf2d30; color: white; border: none; padding: 14px; border-radius: 8px; font-weight: 600; font-size: 15px; cursor: pointer; width: 100%; margin-top: 10px; }
   .btn-primary:hover { background: #961518; }
   
   .log-console { background: #242526; color: #b0b3b8; padding: 15px; border-radius: 8px; font-family: 'Consolas', monospace; font-size: 11px; flex-grow: 1; overflow-y: auto; margin-top: 10px; max-height: 200px; }
   .log-line { border-bottom: 1px solid #3a3b3c; padding: 4px 0; }
   .log-ok { color: #42b72a; } .log-err { color: #f02849; } .log-inf { color: #1877f2; }
 
+  /* Sağ Panel */
   .main-content { background: white; border-radius: 12px; padding: 30px; overflow-y: auto; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
-  .empty-state { text-align: center; color: #65676b; margin-top: 100px; }
   
-  .question-card { background: #f7f8fa; border: 1px solid #dddfe2; border-radius: 10px; padding: 20px; margin-bottom: 20px; }
-  .question-title { color: #1c1e21; font-weight: 700; margin-bottom: 15px; display: block; font-size: 16px; line-height: 1.4; }
-  .option { padding: 10px 12px; margin-bottom: 8px; background: white; border: 1px solid #ebedf0; border-radius: 6px; font-size: 14px; color: #4b4c4f; }
-  .option strong { color: #bf2d30; margin-right: 5px; }
+  .question-card { background: #fff; border: 1px solid #e5e7eb; border-radius: 10px; padding: 25px; margin-bottom: 25px; box-shadow: 0 2px 4px rgba(0,0,0,0.02); }
+  .question-title { color: #111827; font-weight: 700; margin-bottom: 15px; display: block; font-size: 17px; line-height: 1.5; }
   
-  .answer-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 10px; margin-top: 20px; padding-top: 20px; border-top: 1px solid #eee; }
-  .answer-item { background: #f0f2f5; padding: 10px; border-radius: 6px; display: flex; align-items: center; justify-content: space-between; font-size: 13px; font-weight: 600; cursor: pointer; transition: background 0.2s; }
-  .answer-item:hover { background: #e4e6eb; }
-  .answer-item input { margin-right: 10px; cursor: pointer; }
-
-  .evaluation-box { background: #e7f3ff; color: #0c3d69; padding: 20px; border-radius: 8px; margin-top: 20px; line-height: 1.6; white-space: pre-wrap; border-left: 5px solid #1877f2; font-size: 14px; }
+  .answer-item { 
+    background: #f9fafb; padding: 12px 15px; border: 1px solid #e5e7eb; border-radius: 8px; 
+    margin-bottom: 8px; cursor: pointer; transition: all 0.2s; display: flex; align-items: center;
+  }
+  .answer-item:hover { background: #f3f4f6; border-color: #d1d5db; }
+  .answer-item.selected { background: #eff6ff; border-color: #3b82f6; color: #1e40af; }
+  
+  /* Sonuç Gösterimi Stilleri */
+  .answer-item.correct { background: #dcfce7 !important; border-color: #22c55e !important; color: #166534 !important; }
+  .answer-item.wrong { background: #fee2e2 !important; border-color: #ef4444 !important; color: #991b1b !important; opacity: 0.8; }
+  
+  .proof-box { 
+    margin-top: 15px; padding: 15px; background: #fffbeb; border-left: 4px solid #f59e0b; 
+    border-radius: 4px; font-size: 14px; color: #92400e; display: none; line-height: 1.5;
+  }
+  .proof-box strong { display: block; margin-bottom: 5px; color: #b45309; }
 </style>
 </head>
 <body>
 
 <div class="header-bar">
   <h1>🛡️ Agesa Ürün Simülatörü</h1>
-  <span class="badge">V3.0 - Detaylı Analiz</span>
+  <span class="badge">V4.0 - Kanıtlı Sistem</span>
 </div>
 
 <div class="container">
@@ -69,10 +72,10 @@
     </div>
 
     <div class="input-group">
-      <label>2. Çalışma Modu</label>
+      <label>2. Soru Tipi</label>
       <select id="modeSelect">
-        <option value="detailed">🧠 Detaylı & Koşullu Sorular (Önerilen)</option>
-        <option value="hardcase">🔥 Denetçi Modu (Aşırı Zor)</option>
+        <option value="strict">🎯 Kanıta Dayalı (Sadece PDF'tekiler)</option>
+        <option value="hardcase">🔥 Zorlayıcı Senaryolar</option>
       </select>
     </div>
 
@@ -81,28 +84,20 @@
       <div class="file-upload-box">
         <span style="font-size: 24px;">📄</span>
         <p>PDF'leri Seçmek İçin Tıkla</p>
-        <small style="color:#999">(CTRL ile çoklu seçim yapabilirsin)</small>
-        <input type="file" id="pdfInput" accept="application/pdf" multiple onchange="handlePDFSelection(this)">
+        <small style="color:#999">(CTRL ile çoklu seçim)</small>
+        <input type="file" id="pdfInput" accept="application/pdf" multiple onchange="handleFiles(this)">
       </div>
-      <div id="fileListDisplay" class="file-list"></div>
-    </div>
-
-    <div class="input-group">
-      <label>4. Ekran Görüntüsü (Opsiyonel)</label>
-      <input type="file" id="imgInput" accept="image/*" multiple>
+      <div id="fileList" style="font-size:12px; margin-top:5px; color:#666"></div>
     </div>
 
     <button class="btn-primary" onclick="startProcess()">ANALİZİ BAŞLAT</button>
-
-    <div class="log-console" id="logger">
-      <div class="log-line">Sistem hazır.</div>
-    </div>
+    <div class="log-console" id="logger"><div class="log-line">Sistem hazır.</div></div>
   </div>
 
   <div class="main-content" id="outputArea">
-    <div class="empty-state">
-      <h2>Henüz Analiz Yok</h2>
-      <p>Sol taraftan doküman yükleyip analizi başlatın.</p>
+    <div style="text-align:center; margin-top:100px; color:#6b7280">
+      <h3>Bekleniyor...</h3>
+      <p>Lütfen sol taraftan doküman yükleyip başlatın.</p>
     </div>
   </div>
 
@@ -112,7 +107,7 @@
 pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
 
 let sessionKey = "";
-let questions = [];
+let questions = []; // Artık içinde doğru cevap ve kanıt da olacak
 let userAnswers = {};
 
 function log(msg, type) {
@@ -124,179 +119,177 @@ function log(msg, type) {
   box.scrollTop = box.scrollHeight;
 }
 
-function handlePDFSelection(input) {
-  const display = document.getElementById("fileListDisplay");
-  if (input.files && input.files.length > 0) {
-    let names = [];
-    for(let i=0; i<input.files.length; i++) names.push("• " + input.files[i].name);
-    display.innerHTML = names.join("<br>");
-    log(`${input.files.length} PDF seçildi.`, "inf");
-  } else {
-    display.innerHTML = "";
+function handleFiles(input) {
+  const list = document.getElementById("fileList");
+  if (input.files.length > 0) {
+    list.innerHTML = Array.from(input.files).map(f => "• " + f.name).join("<br>");
+    log(`${input.files.length} dosya seçildi.`, "inf");
   }
 }
 
 async function parsePDF(file) {
-  log(`Okunuyor: ${file.name}...`, "inf");
+  log(`Okunuyor: ${file.name}`, "inf");
   try {
     const buffer = await file.arrayBuffer();
     const pdf = await pdfjsLib.getDocument(buffer).promise;
     let fullText = "";
     for(let i=1; i<=pdf.numPages; i++){
       const page = await pdf.getPage(i);
-      const content = await page.getTextContent();
-      fullText += `\n--- [${file.name} Syf ${i}] ---\n` + content.items.map(i=>i.str).join(" ");
+      const text = await page.getTextContent();
+      fullText += `\n[Sayfa ${i}] ` + text.items.map(s => s.str).join(" ");
     }
-    return fullText.length > 50 ? fullText : "";
+    return fullText;
   } catch(e) {
-    log(`Hata (${file.name}): ` + e.message, "err");
+    log("Hata: " + e.message, "err");
     return "";
   }
 }
 
-function toBase64(file) {
-  return new Promise((r) => {
-    const reader = new FileReader();
-    reader.onload = () => r(reader.result.split(',')[1]);
-    reader.readAsDataURL(file);
-  });
-}
-
 async function startProcess() {
-  document.getElementById("outputArea").innerHTML = '<div class="empty-state"><h3>Analiz Ediliyor...</h3><p>Yapay zeka detaylı senaryoları inceliyor...</p></div>';
+  const area = document.getElementById("outputArea");
+  area.innerHTML = '<div style="text-align:center;margin-top:50px"><h3>Analiz Yapılıyor...</h3><p>Doküman taranıyor ve kanıtlı sorular üretiliyor.</p></div>';
+  
   questions = [];
   userAnswers = {};
 
-  // API Key Temizliği
-  let rawKey = document.getElementById("apiKey").value;
+  // API Key Temizle
+  const rawKey = document.getElementById("apiKey").value;
   const key = rawKey.replace(/[^\x00-\x7F]/g, "").trim();
   document.getElementById("apiKey").value = key;
-  sessionKey = key;
 
-  const pdfFiles = document.getElementById("pdfInput").files;
-  const imgFiles = document.getElementById("imgInput").files;
-  const mode = document.getElementById("modeSelect").value;
-
-  if(!key) { log("Lütfen API Key giriniz!", "err"); return; }
-  if(pdfFiles.length === 0 && imgFiles.length === 0) { log("Dosya seçilmedi!", "err"); return; }
+  if(!key) { log("API Key yok!", "err"); return; }
+  const files = document.getElementById("pdfInput").files;
+  if(files.length === 0) { log("Dosya yok!", "err"); return; }
 
   try {
+    // 1. PDF OKUMA
     let combinedText = "";
-    if(pdfFiles.length > 0) {
-      for (let i = 0; i < pdfFiles.length; i++) combinedText += (await parsePDF(pdfFiles[i])) + "\n\n";
-    }
+    for(let i=0; i<files.length; i++) combinedText += await parsePDF(files[i]) + "\n\n";
+
+    // 2. PROMPT (Çok Sıkı)
+    const prompt = `
+    Sen bir Sigorta Denetçisisin. Verilen metni analiz et ve 10 adet soru üret.
     
-    let imageList = [];
-    if(imgFiles.length > 0) {
-      for(let f of imgFiles) imageList.push(await toBase64(f));
-    }
-
-    // --- KRİTİK PROMPT GÜNCELLEMESİ ---
-    let promptText = "";
-    if(mode === "hardcase") {
-      promptText = `Sen uzman bir Sigorta Denetçisisin. Hedefimiz zorlayıcı senaryolar bulmak.
-      GÖREV: Dokümanlardaki "İstisnalar", "Limitler" ve "Özel Şartları" baz alarak 10 adet ÇOK ZOR soru üret.
-      
-      KURALLAR:
-      1. Asla basit soru sorma ("Süre ne kadar?" gibi).
-      2. Daima KOŞUL belirt. Örn: "Giriş yaşı 50 olan ve X paketini seçen biri için süre ne kadardır?"
-      3. Şıklar birbirine çok yakın olsun (Çeldirici).
-      4. Sorular net olsun, muallaklık olmasın.
-      5. Her soru için KESİNLİKLE 5 adet şık (A,B,C,D,E) üret.`;
-    } else {
-      promptText = `Sen Kıdemli Sigorta Eğitmenisin. Amacımız personelin ürün detaylarına hakim olmasını sağlamak.
-      GÖREV: Dokümanları analiz et ve 10 adet DETAYLI SİMÜLASYON sorusu üret.
-      
-      KURALLAR:
-      1. Muallak sorulardan kaçın. Örneğin "Süre ne kadar?" deme; "X durumunda süre ne kadar?" de.
-      2. Eğer bir cevabın birden fazla değişkeni varsa (yaş, paket vb.), soruda bu değişkeni sabitle.
-      3. "Her İhtimalin Sigortası" gibi ürünlerdeki yaş aralıklarına ve teminat limitlerine odaklan.
-      4. Her soru için KESİNLİKLE 5 adet şık (A,B,C,D,E) üret.`;
-    }
-
-    const messages = [
+    ÇOK ÖNEMLİ KURALLAR:
+    1. Sadece ve sadece metinde açıkça yazan bilgileri sor. Asla tahmin yürütme.
+    2. Eğer bir süre, yaş veya limit soruyorsan, metindeki KOŞULU belirt (Örn: "X planını seçenler için süre nedir?").
+    3. JSON formatında yanıt ver. Her soru için "correct_option" (A,B,C,D,E) ve "proof" (Kanıt Metni) alanlarını doldurmak zorundasın.
+    4. "proof" alanı, o cevabın doğru olduğunu metinden alıntılayarak göstermelidir.
+    
+    İstenen JSON Formatı:
+    [
       {
-        role: "user",
-        content: [
-          { type: "text", text: `${promptText}\n\nÇIKTI FORMATI: Sadece JSON Array. Markdown yok. 
-          Format: [{"question":"...","options":["A) ...","B) ...","C) ...","D) ...","E) ..."]}] 
-          \n\nMETİN:\n${combinedText.substring(0, 50000)}` },
-          ...imageList.map(img => ({ type: "image_url", image_url: { url: `data:image/jpeg;base64,${img}` } }))
-        ]
+        "question": "Soru metni...",
+        "options": ["A) ...", "B) ...", "C) ...", "D) ...", "E) ..."],
+        "correct_option": "A",
+        "proof": "Sayfa 2, Madde 3.1: 'Sigortalı 18 yaşından küçükse ebeveyn onayı gerekir' şeklinde belirtilmiştir."
       }
-    ];
+    ]
+    
+    METİN:
+    ${combinedText.substring(0, 50000)}
+    `;
 
-    log("OpenAI'a gönderiliyor...", "inf");
-    const response = await fetch("https://api.openai.com/v1/chat/completions", {
+    log("Yapay zekaya soruluyor...", "inf");
+    const res = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
-      headers: { "Authorization": `Bearer ${sessionKey}`, "Content-Type": "application/json" },
-      body: JSON.stringify({ model: "gpt-4o", messages: messages, temperature: 0.4 })
+      headers: { "Authorization": `Bearer ${key}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ model: "gpt-4o", messages: [{role:"user", content: prompt}], temperature: 0.2 }) // Temp düşük: Daha tutarlı
     });
 
-    if(!response.ok) throw new Error("API Hatası: " + response.statusText);
-
-    const data = await response.json();
+    if(!res.ok) throw new Error("API Hatası");
+    const data = await res.json();
     let content = data.choices[0].message.content.replace(/```json|```/g, "").trim();
     
-    let parsed = JSON.parse(content);
-    questions = Array.isArray(parsed) ? parsed : (parsed.questions || parsed.sorular);
-    
-    log(`${questions.length} detaylı soru üretildi.`, "ok");
-    renderUI();
+    questions = JSON.parse(content);
+    if(questions.questions) questions = questions.questions; // Bazen wrapper içinde dönerse
+
+    log(`${questions.length} soru üretildi.`, "ok");
+    renderQuiz();
 
   } catch(e) {
     log("Hata: " + e.message, "err");
-    document.getElementById("outputArea").innerHTML = `<div class="empty-state" style="color:red"><p>${e.message}</p></div>`;
+    area.innerHTML = `<h3 style="color:red">Hata Oluştu</h3><p>${e.message}</p>`;
   }
 }
 
-function renderUI() {
+function renderQuiz() {
   const area = document.getElementById("outputArea");
-  area.innerHTML = `<h2>Simülasyon Soruları</h2>`;
+  area.innerHTML = `<h2>Sorular (${questions.length} Adet)</h2>`;
   
-  const letters = ["A","B","C","D","E","F"]; // Yedekli harf havuzu
-
-  questions.forEach((q, i) => {
-    // Şık sayısına göre dinamik buton üretimi
-    let optionsHTML = "";
-    q.options.forEach((opt, idx) => {
-        let label = letters[idx] || "?";
-        optionsHTML += `
-         <div class="answer-item" onclick="document.getElementById('radio_${i}_${idx}').click()">
-           <div style="display:flex; align-items:center; width:100%">
-             <input type="radio" id="radio_${i}_${idx}" name="q${i}" onchange="userAnswers[${i+1}]='${label}'"> 
-             <span style="font-weight:bold; color:#bf2d30; margin-right:5px">${label})</span> ${opt.replace(/^[A-E]\)\s*/, '')}
-           </div>
-         </div>`;
+  questions.forEach((q, idx) => {
+    let optsHTML = "";
+    const letters = ["A","B","C","D","E"];
+    
+    q.options.forEach((opt, oIdx) => {
+      const letter = letters[oIdx];
+      // Şık metninden "A)" gibi kısımları temizleyelim, biz zaten ekliyoruz
+      const cleanOpt = opt.replace(/^[A-Ea-e][\).]\s*/, "");
+      
+      optsHTML += `
+        <div class="answer-item" id="opt_${idx}_${letter}" onclick="selectAnswer(${idx}, '${letter}')">
+          <b style="color:#bf2d30; margin-right:10px; width:20px">${letter})</b> ${cleanOpt}
+        </div>
+      `;
     });
 
     area.innerHTML += `
-      <div class="question-card">
-        <span class="question-title">${i+1}. ${q.question}</span>
-        <div class="answer-grid" style="grid-template-columns: 1fr; border:none; padding-top:10px">
-           ${optionsHTML}
+      <div class="question-card" id="q_card_${idx}">
+        <span class="question-title">${idx+1}. ${q.question}</span>
+        <div>${optsHTML}</div>
+        <div class="proof-box" id="proof_${idx}">
+          <strong>📜 Resmi Doküman Kanıtı:</strong>
+          ${q.proof || "Kanıt metni bulunamadı."}
         </div>
       </div>
     `;
   });
 
-  area.innerHTML += `<button class="btn-primary" style="background:#10b981" onclick="evaluateAnswers()">CEVAPLARI DEĞERLENDİR</button>`;
-  area.innerHTML += `<div id="evalBox"></div>`;
+  area.innerHTML += `<button class="btn-primary" style="background:#10b981; margin-bottom:50px" onclick="checkAnswers()">TESTİ BİTİR VE KONTROL ET</button>`;
 }
 
-async function evaluateAnswers() {
-  log("Değerlendiriliyor...", "inf");
-  const prompt = `Sorular: ${JSON.stringify(questions)}\nKullanıcı Cevapları: ${JSON.stringify(userAnswers)}\n\nLütfen detaylı analiz yap. Kullanıcının eksik bildiği noktaları ürün dokümanına atıfta bulunarak (Örn: Özel Şartlar Madde 3) açıkla.`;
+function selectAnswer(qIdx, letter) {
+  // Görsel seçim
+  const parent = document.getElementById(`q_card_${qIdx}`);
+  const items = parent.querySelectorAll('.answer-item');
+  items.forEach(i => i.classList.remove('selected'));
   
-  const response = await fetch("https://api.openai.com/v1/chat/completions", {
-      method: "POST",
-      headers: { "Authorization": `Bearer ${sessionKey}`, "Content-Type": "application/json" },
-      body: JSON.stringify({ model: "gpt-4o", messages: [{ role: "user", content: prompt }], temperature: 0.3 })
+  document.getElementById(`opt_${qIdx}_${letter}`).classList.add('selected');
+  userAnswers[qIdx] = letter;
+}
+
+function checkAnswers() {
+  let score = 0;
+  questions.forEach((q, idx) => {
+    const userAns = userAnswers[idx];
+    const correctAns = q.correct_option.trim().toUpperCase(); // A, B vs.
+    const proofBox = document.getElementById(`proof_${idx}`);
+    
+    // Kanıtı göster
+    proofBox.style.display = "block";
+    
+    // Şıkları boya
+    const letters = ["A","B","C","D","E"];
+    letters.slice(0, q.options.length).forEach(L => {
+      const el = document.getElementById(`opt_${idx}_${L}`);
+      
+      // Doğru şıkkı her zaman yeşil yap
+      if(L === correctAns) {
+        el.classList.add('correct');
+      }
+      
+      // Eğer kullanıcı yanlış seçtiyse onu kırmızı yap
+      if(userAns === L && userAns !== correctAns) {
+        el.classList.add('wrong');
+      }
+    });
+
+    if(userAns === correctAns) score++;
   });
 
-  const data = await response.json();
-  document.getElementById("evalBox").innerHTML = `<div class="evaluation-box">${data.choices[0].message.content}</div>`;
-  log("Tamamlandı.", "ok");
+  // Skoru en üste yaz
+  window.scrollTo(0,0);
+  alert(`Test Tamamlandı!\nDoğru Sayısı: ${score} / ${questions.length}`);
 }
 </script>
 </body>
