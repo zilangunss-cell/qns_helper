@@ -1,18 +1,19 @@
 import streamlit as st
 import yt_dlp
 import nltk
+from nltk.corpus import stopwords
 from sumy.parsers.plaintext import PlaintextParser
 from sumy.nlp.tokenizers import Tokenizer
 from sumy.summarizers.lsa import LsaSummarizer
-from sumy.nlp.stemmers import Stemmer
-from sumy.utils import get_stop_words
 
-# Gerekli NLTK verilerini indir
-try:
-    nltk.data.find('tokenizers/punkt')
-except LookupError:
-    nltk.download('punkt')
-    nltk.download('punkt_tab')
+# --- GEREKLİ NLTK VERİLERİNİ İNDİR ---
+# Streamlit her başladığında bunları kontrol etsin
+nltk_packages = ['punkt', 'punkt_tab', 'stopwords']
+for package in nltk_packages:
+    try:
+        nltk.data.find(f'tokenizers/{package}' if 'punkt' in package else f'corpora/{package}')
+    except LookupError:
+        nltk.download(package)
 
 st.set_page_config(page_title="Varpilatör Web", page_icon="🤖", layout="wide")
 
@@ -87,34 +88,37 @@ if youtube_url:
                                         if 'segs' in event:
                                             for seg in event['segs']:
                                                 if 'utf8' in seg:
-                                                    # Noktalama işareti sorunu için basit bir boşluk ekleme
                                                     full_text += seg['utf8'] + " "
                 
                 # 2. ADIM: İŞLEME VE SUNMA
                 if full_text:
-                    # Dil tespiti (Basitçe hedef dile göre)
-                    dil = "turkish" if target_lang == 'tr' else "english"
+                    # Dil tespiti ve Stop Words Yükleme
+                    dil_nltk = "turkish" if target_lang == 'tr' else "english"
                     
-                    parser = PlaintextParser.from_string(full_text, Tokenizer(dil))
+                    parser = PlaintextParser.from_string(full_text, Tokenizer(dil_nltk))
                     summarizer = LsaSummarizer()
                     
-                    # Stop words (ve, veya, bir gibi gereksiz kelimeleri temizle)
-                    summarizer.stop_words = get_stop_words(dil)
+                    # HATA ÇÖZÜMÜ BURADA:
+                    # Stop words'leri sumy'den değil, nltk'den alıyoruz
+                    try:
+                        stop_words_list = stopwords.words(dil_nltk)
+                        summarizer.stop_words = stop_words_list
+                    except Exception as sw_error:
+                        st.warning(f"Stop-words yüklenemedi, özet kalitesi düşebilir. Hata: {sw_error}")
 
-                    # A) ANAHTAR KELİMELER (En kısa özet budur)
-                    st.divider()
-                    st.subheader("🔑 Anahtar Kelimeler")
-                    st.write("Video temel olarak bunlardan bahsediyor:")
-                    
-                    # Sumy Keywords Extraction (TextRank benzeri çalışır ama LsaSummarizer içinde built-in yoktur, manuel basit extraction yapalım veya özete odaklanalım)
-                    # Basitlik adına özeti verelim, anahtar kelime yerine özetin en başına odaklanalım.
-                    
                     # B) ÖZET
-                    st.subheader(f"📌 En Önemli {ozet_cumle_sayisi} Cümle")
-                    summary = summarizer(parser.document, ozet_cumle_sayisi)
+                    st.divider()
+                    st.subheader(f"📌 Video Özeti ({ozet_cumle_sayisi} Cümle)")
                     
-                    for i, sentence in enumerate(summary, 1):
-                        st.info(f"**{i}.** {str(sentence)}")
+                    try:
+                        summary = summarizer(parser.document, ozet_cumle_sayisi)
+                        if len(summary) > 0:
+                            for i, sentence in enumerate(summary, 1):
+                                st.info(f"**{i}.** {str(sentence)}")
+                        else:
+                            st.warning("Metin özetlenemeyecek kadar kısa veya anlamsız.")
+                    except Exception as sum_err:
+                        st.error(f"Özetleme sırasında hata: {sum_err}")
                         
                     # C) TAM METİN
                     with st.expander("📄 Tam Metni İncele"):
