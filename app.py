@@ -1,16 +1,26 @@
 import streamlit as st
 import yt_dlp
-import json
+import nltk
+from sumy.parsers.plaintext import PlaintextParser
+from sumy.nlp.tokenizers import Tokenizer
+from sumy.summarizers.lsa import LsaSummarizer
+
+# NLTK için gerekli paketleri indir (Özetleme için şart)
+try:
+    nltk.data.find('tokenizers/punkt')
+except LookupError:
+    nltk.download('punkt')
+    nltk.download('punkt_tab')
 
 st.set_page_config(page_title="Varpilatör Web", page_icon="🤖", layout="centered")
 
-st.title("🤖 Varpilatör - Güçlendirilmiş Mod")
-st.write("Daha güçlü bir altyapı ile video metni çekiliyor.")
+st.title("🤖 Varpilatör - Özetleyici Modu")
+st.write("Video metnini çeker ve sizin için özetler.")
 
 youtube_url = st.text_input("YouTube Video Linkini Yapıştır:")
 
 if youtube_url:
-    # Video ID'sini göstermelik alıyoruz (resim için)
+    # Video ID'sini göstermelik alıyoruz
     video_id = ""
     if "v=" in youtube_url:
         video_id = youtube_url.split("v=")[1].split("&")[0]
@@ -20,65 +30,78 @@ if youtube_url:
     if video_id:
         st.image(f"https://img.youtube.com/vi/{video_id}/0.jpg", use_container_width=True)
 
-    if st.button("Metni Getir"):
-        with st.spinner("YouTube engelleri aşılıyor ve metin çekiliyor..."):
+    if st.button("Analiz Et ve Özetle"):
+        with st.spinner("Video inceleniyor ve özet çıkarılıyor..."):
             try:
-                # yt-dlp ayarları (Sadece veri çeker, video indirmez)
+                # 1. ADIM: METNİ ÇEKME (yt-dlp)
                 ydl_opts = {
-                    'skip_download': True,      # Videoyu indirme
-                    'writesubtitles': True,     # Altyazı bak
-                    'writeautomaticsub': True,  # Otomatik altyazı bak
-                    'subtitleslangs': ['tr', 'en'], # Türkçe veya İngilizce
-                    'quiet': True,              # Gereksiz log verme
+                    'skip_download': True,
+                    'writesubtitles': True,
+                    'writeautomaticsub': True,
+                    'subtitleslangs': ['tr', 'en'],
+                    'quiet': True,
                 }
 
+                full_text = ""
+                
                 with yt_dlp.YoutubeDL(ydl_opts) as ydl:
                     info = ydl.extract_info(youtube_url, download=False)
-                    
-                    # Altyazıları bulma mantığı
                     captions = info.get('automatic_captions') or info.get('subtitles')
                     
                     if captions:
-                        # Önce Türkçe var mı bak, yoksa İngilizce
                         target_lang = 'tr' if 'tr' in captions else 'en'
-                        
                         if target_lang in captions:
-                            # En iyi formatı seç (genelde json3 formatı en temizidir)
                             subs_list = captions[target_lang]
                             json_url = None
+                            # En temiz formatı (json3) bulmaya çalış
                             for sub in subs_list:
                                 if sub['ext'] == 'json3':
                                     json_url = sub['url']
                                     break
-                            
-                            # Eğer json3 bulamazsa ilkini al
                             if not json_url and subs_list:
                                 json_url = subs_list[0]['url']
 
-                            # Veriyi indirip metne çevirelim
                             if json_url:
                                 import requests
                                 response = requests.get(json_url)
                                 data = response.json()
                                 
-                                full_text = ""
                                 if 'events' in data:
                                     for event in data['events']:
                                         if 'segs' in event:
                                             for seg in event['segs']:
                                                 if 'utf8' in seg:
-                                                    full_text += seg['utf8']
-                                    
-                                    st.subheader("📝 Video Metni:")
-                                    st.text_area("Sonuç", full_text, height=300)
-                                    st.success("Başarıyla çekildi!")
-                                else:
-                                    st.warning("Altyazı formatı beklendiği gibi değil.")
-                        else:
-                            st.warning("Bu videoda Türkçe veya İngilizce altyazı bulunamadı.")
-                    else:
-                        st.error("Bu videonun altyazısı kapalı veya erişilemiyor.")
+                                                    full_text += seg['utf8'] + " "
+                
+                # 2. ADIM: ÖZETLEME VE GÖSTERME
+                if full_text:
+                    # A) ÖZET KISMI
+                    st.success("✅ İşlem Başarılı!")
+                    st.subheader("📌 Video Özeti")
+                    
+                    # Sumy kütüphanesi ile özetleme
+                    try:
+                        parser = PlaintextParser.from_string(full_text, Tokenizer("turkish"))
+                        summarizer = LsaSummarizer()
+                        # En önemli 3 cümleyi seç
+                        summary = summarizer(parser.document, 3) 
+                        
+                        ozet_metni = ""
+                        for sentence in summary:
+                            ozet_metni += f"- {str(sentence)}\n"
+                        
+                        st.info(ozet_metni)
+                        
+                    except Exception as sum_err:
+                        st.warning("Özet çıkarılamadı, sadece tam metin gösteriliyor.")
+                    
+                    # B) TAM METİN KISMI
+                    with st.expander("📄 Tam Video Metnini Görmek İçin Tıkla"):
+                        st.text_area("Tüm Metin", full_text, height=400)
+                        
+                else:
+                    st.error("Metin çekilemedi veya video dili desteklenmiyor.")
 
             except Exception as e:
                 st.error("Bir hata oluştu.")
-                st.info(f"Hata detayı: {e}")
+                st.write(f"Hata detayı: {e}")
