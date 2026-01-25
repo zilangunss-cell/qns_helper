@@ -3,7 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Görsel Analiz Simülatörü</title>
+<title>Simülatör - Hibrit Mod</title>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
 
 <style>
   /* GENEL AYARLAR ve LACİVERT TEMA */
@@ -12,26 +14,23 @@
     font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; 
     background-color: #001E4D; /* İstenen Lacivert Arka Plan */
     color: #e0e0e0; 
+    height: 100vh;
+    overflow: hidden; /* Sayfa kaydırmayı engelle, içerik kayar */
   }
   
-  .header-bar { 
-    background: linear-gradient(90deg, #bf2d30 0%, #8a1c1e 100%); 
-    color: white; 
-    padding: 15px 30px; 
-    display: flex; 
-    align-items: center; 
-    justify-content: space-between; 
-    box-shadow: 0 4px 15px rgba(0,0,0,0.4); 
-    border-bottom: 1px solid rgba(255,255,255,0.1);
+  /* Container artık tam sayfa çünkü header yok */
+  .container { 
+    display: grid; 
+    grid-template-columns: 350px 1fr; 
+    gap: 20px; 
+    padding: 20px; 
+    height: 100vh; 
+    box-sizing: border-box; 
   }
-  .header-bar h1 { margin: 0; font-size: 22px; font-weight: 600; letter-spacing: 0.5px; }
-  .badge { background: rgba(255,255,255,0.2); padding: 4px 10px; border-radius: 20px; font-size: 12px; }
-
-  .container { display: grid; grid-template-columns: 350px 1fr; gap: 20px; padding: 20px; height: calc(100vh - 70px); box-sizing: border-box; }
 
   /* SOL PANEL (Koyu Tema) */
   .sidebar { 
-    background: #002855; /* Panel için biraz daha açık lacivert */
+    background: #002855; 
     padding: 20px; 
     border-radius: 12px; 
     box-shadow: 0 4px 12px rgba(0,0,0,0.3); 
@@ -51,32 +50,36 @@
     border-radius: 8px; font-size: 14px; box-sizing: border-box; 
   }
   
-  /* DOSYA YÜKLEME KUTUSU (Görsel İçin) */
+  /* DOSYA YÜKLEME KUTULARI */
   .file-upload-box { 
-    border: 2px dashed #bf2d30; 
-    background: rgba(191, 45, 48, 0.1); 
+    border: 2px dashed #405d85; 
+    background: rgba(64, 93, 133, 0.1); 
     border-radius: 10px; 
-    padding: 20px; 
+    padding: 15px; 
     text-align: center; 
     cursor: pointer; 
     position: relative; 
     transition: all 0.2s; 
     color: #e0e0e0;
   }
-  .file-upload-box:hover { background: rgba(191, 45, 48, 0.2); }
+  .file-upload-box:hover { background: rgba(64, 93, 133, 0.2); border-color: #6688b3; }
   .file-upload-box input { position: absolute; top:0; left:0; width:100%; height:100%; opacity:0; cursor:pointer; }
   
+  /* Görsel kutusu için özel renk (ayırt edici olsun) */
+  .img-box { border-color: #bf2d30; background: rgba(191, 45, 48, 0.1); }
+  .img-box:hover { background: rgba(191, 45, 48, 0.2); }
+
   .btn-primary { background: #bf2d30; color: white; border: none; padding: 14px; border-radius: 8px; font-weight: 600; font-size: 15px; cursor: pointer; width: 100%; margin-top: 10px; transition: 0.2s; }
   .btn-primary:hover { background: #ff4d4f; box-shadow: 0 0 10px rgba(255, 77, 79, 0.5); }
   
-  .log-console { background: #00091a; color: #00ff88; padding: 15px; border-radius: 8px; font-family: 'Consolas', monospace; font-size: 11px; flex-grow: 1; overflow-y: auto; margin-top: 10px; max-height: 200px; border: 1px solid #333; }
+  .log-console { background: #00091a; color: #00ff88; padding: 15px; border-radius: 8px; font-family: 'Consolas', monospace; font-size: 11px; flex-grow: 1; overflow-y: auto; margin-top: 10px; max-height: 150px; border: 1px solid #333; }
   .log-line { border-bottom: 1px solid #1a2733; padding: 4px 0; }
   .log-err { color: #ff4d4f; } .log-inf { color: #4db8ff; }
 
-  /* SAĞ PANEL (Sonuç Alanı - Okunabilirlik için Açık Renk) */
+  /* SAĞ PANEL */
   .main-content { 
     background: #fdfdfd; 
-    color: #1c1e21; /* Metin rengi siyah kalsın ki okunsun */
+    color: #1c1e21; 
     border-radius: 12px; 
     padding: 30px; 
     overflow-y: auto; 
@@ -92,7 +95,6 @@
   }
   .answer-item:hover { background: #f3f4f6; border-color: #d1d5db; }
   .answer-item.selected { background: #eff6ff; border-color: #3b82f6; color: #1e40af; }
-  
   .answer-item.correct { background: #dcfce7 !important; border-color: #22c55e !important; color: #166534 !important; }
   .answer-item.wrong { background: #fee2e2 !important; border-color: #ef4444 !important; color: #991b1b !important; opacity: 0.8; }
   
@@ -103,11 +105,6 @@
 </style>
 </head>
 <body>
-
-<div class="header-bar">
-  <h1>🛡️ Agesa Görsel Analiz Simülatörü</h1>
-  <span class="badge">V5.0 - Image Vision</span>
-</div>
 
 <div class="container">
   
@@ -120,23 +117,32 @@
     <div class="input-group">
       <label>2. Soru Tipi</label>
       <select id="modeSelect">
-        <option value="strict">🎯 Görsel Kanıtlı (Strict)</option>
+        <option value="strict">🎯 Kanıtlı Analiz (Strict)</option>
         <option value="hardcase">🔥 Zorlayıcı Senaryolar</option>
       </select>
     </div>
 
     <div class="input-group">
-      <label>3. Ürün Görselleri (Resim)</label>
-      <div class="file-upload-box">
+      <label>3. Görsel Yükle (Resim)</label>
+      <div class="file-upload-box img-box">
         <span style="font-size: 24px;">🖼️</span>
-        <p>Görselleri Seçmek İçin Tıkla</p>
-        <small style="color:#bbb; display:block; margin-top:5px">(Sınırsız resim yüklenebilir)</small>
-        <input type="file" id="imageInput" accept="image/*" multiple onchange="handleFiles(this)">
+        <p>Görsel Seç</p>
+        <input type="file" id="imageInput" accept="image/*" multiple onchange="handleFiles(this, 'imgList')">
       </div>
-      <div id="fileList" style="font-size:12px; margin-top:5px; color:#aecbe8"></div>
+      <div id="imgList" style="font-size:11px; margin-top:5px; color:#aecbe8"></div>
     </div>
 
-    <button class="btn-primary" onclick="startProcess()">GÖRSELLERİ ANALİZ ET</button>
+    <div class="input-group">
+      <label>4. Ürün Dokümanları (PDF)</label>
+      <div class="file-upload-box">
+        <span style="font-size: 24px;">📄</span>
+        <p>PDF Seç</p>
+        <input type="file" id="pdfInput" accept="application/pdf" multiple onchange="handleFiles(this, 'pdfList')">
+      </div>
+      <div id="pdfList" style="font-size:11px; margin-top:5px; color:#aecbe8"></div>
+    </div>
+
+    <button class="btn-primary" onclick="startProcess()">ANALİZİ BAŞLAT</button>
     <div class="log-console" id="logger"><div class="log-line">Sistem hazır.</div></div>
   </div>
 
@@ -144,13 +150,16 @@
     <div style="text-align:center; margin-top:100px; color:#6b7280">
       <img src="https://cdn-icons-png.flaticon.com/512/3342/3342137.png" width="80" style="opacity:0.5; margin-bottom:20px">
       <h3>Bekleniyor...</h3>
-      <p>Sol taraftan ürün broşürü veya doküman resimleri yükleyin.</p>
+      <p>Sol taraftan Görsel veya PDF yükleyerek analizi başlatın.</p>
     </div>
   </div>
 
 </div>
 
 <script>
+// PDF Worker Ayarı
+pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
+
 let questions = []; 
 let userAnswers = {};
 
@@ -163,15 +172,15 @@ function log(msg, type) {
   box.scrollTop = box.scrollHeight;
 }
 
-function handleFiles(input) {
-  const list = document.getElementById("fileList");
+function handleFiles(input, listId) {
+  const list = document.getElementById(listId);
   if (input.files.length > 0) {
     list.innerHTML = Array.from(input.files).map(f => "• " + f.name).join("<br>");
-    log(`${input.files.length} görsel seçildi.`, "inf");
+    log(`${input.files.length} dosya eklendi (${listId}).`, "inf");
   }
 }
 
-// Görseli Base64 formatına çeviren yardımcı fonksiyon
+// Görsel -> Base64
 const toBase64 = file => new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.readAsDataURL(file);
@@ -179,76 +188,112 @@ const toBase64 = file => new Promise((resolve, reject) => {
     reader.onerror = error => reject(error);
 });
 
+// PDF -> Text
+async function parsePDF(file) {
+  log(`PDF Okunuyor: ${file.name}`, "inf");
+  try {
+    const buffer = await file.arrayBuffer();
+    const pdf = await pdfjsLib.getDocument(buffer).promise;
+    let fullText = "";
+    for(let i=1; i<=pdf.numPages; i++){
+      const page = await pdf.getPage(i);
+      const text = await page.getTextContent();
+      fullText += `\n[PDF: ${file.name} - Sayfa ${i}] ` + text.items.map(s => s.str).join(" ");
+    }
+    return fullText;
+  } catch(e) {
+    log("PDF Hatası: " + e.message, "err");
+    return "";
+  }
+}
+
 async function startProcess() {
   const area = document.getElementById("outputArea");
-  area.innerHTML = '<div style="text-align:center;margin-top:50px"><h3>Görseller İşleniyor...</h3><p>Yapay zeka görselleri okuyor ve soru üretiyor. (Görsel boyutuna göre biraz sürebilir)</p></div>';
   
-  questions = [];
-  userAnswers = {};
-
   const rawKey = document.getElementById("apiKey").value;
   const key = rawKey.replace(/[^\x00-\x7F]/g, "").trim();
   document.getElementById("apiKey").value = key;
 
   if(!key) { log("API Key girilmedi!", "err"); return; }
   
-  const files = document.getElementById("imageInput").files;
-  if(files.length === 0) { log("Görsel yüklenmedi!", "err"); return; }
+  const imgFiles = document.getElementById("imageInput").files;
+  const pdfFiles = document.getElementById("pdfInput").files;
+  
+  if(imgFiles.length === 0 && pdfFiles.length === 0) { 
+    log("Hiçbir dosya (Resim veya PDF) seçilmedi!", "err"); 
+    return; 
+  }
+
+  area.innerHTML = '<div style="text-align:center;margin-top:50px"><h3>Analiz Yapılıyor...</h3><p>Yapay zeka yüklenen tüm kaynakları (PDF + Görsel) inceliyor.</p></div>';
+  questions = [];
+  userAnswers = {};
 
   try {
-    // 1. GÖRSELLERİ HAZIRLA (Base64)
-    log("Görseller dönüştürülüyor...", "inf");
-    let imageContent = [];
+    let apiContent = [];
     
-    // Metin talimatı
-    imageContent.push({
-      type: "text", 
-      text: `Sen bir Sigorta Denetçisisin. Aşağıdaki görselleri analiz et ve 5 adet çoktan seçmeli soru üret.
+    // 1. PDF METİNLERİNİ HAZIRLA
+    let pdfContextText = "";
+    if (pdfFiles.length > 0) {
+        log("PDF'ler metne dönüştürülüyor...", "inf");
+        for(let i=0; i<pdfFiles.length; i++) {
+            pdfContextText += await parsePDF(pdfFiles[i]) + "\n\n";
+        }
+    }
+
+    // 2. PROMPT METNİNİ OLUŞTUR
+    let systemPrompt = `
+      Sen uzman bir Sigorta Denetçisisin. 
+      Sana verilen görselleri ve/veya PDF metinlerini analiz et.
+      
+      GÖREV:
+      Bu dokümanlardaki bilgilere dayanarak 5 adet zorlayıcı, çoktan seçmeli soru üret.
+      
+      METİN KAYNAKLARI (PDF):
+      ${pdfContextText.length > 0 ? pdfContextText.substring(0, 30000) : "PDF yüklenmedi."}
       
       KURALLAR:
-      1. Sadece görsellerde yer alan bilgileri sor.
-      2. Yanıt formatın kesinlikle şu JSON yapısında olmalı (Markdown kullanma, sadece saf JSON):
+      1. Hem görsellerdeki hem de metindeki bilgileri kullan.
+      2. Asla doküman dışı bilgi uydurma.
+      3. Yanıtı sadece saf JSON formatında ver (Markdown yok).
       
+      JSON FORMATI:
       {
         "questions": [
           {
-            "question": "Soru metni...",
+            "question": "Soru...",
             "options": ["A) ...", "B) ...", "C) ...", "D) ...", "E) ..."],
             "correct_option": "A",
-            "proof": "Görselde '...' başlığı altında açıkça belirtilmiştir."
+            "proof": "Bu bilgi Görsel 1'de veya PDF Sayfa 2'de açıkça geçmektedir."
           }
         ]
-      }`
-    });
+      }
+    `;
 
-    // Her bir görseli ekle
-    for (let i = 0; i < files.length; i++) {
-        const base64Data = await toBase64(files[i]);
-        imageContent.push({
-            type: "image_url",
-            image_url: {
-                url: base64Data,
-                detail: "high" // Detaylı okuma için
-            }
-        });
-        log(`${i+1}. görsel hazırlandı.`, "inf");
+    // Promptu içeriğe ekle
+    apiContent.push({ type: "text", text: systemPrompt });
+
+    // 3. GÖRSELLERİ EKLE
+    if (imgFiles.length > 0) {
+        log("Görseller işleniyor...", "inf");
+        for (let i = 0; i < imgFiles.length; i++) {
+            const base64Data = await toBase64(imgFiles[i]);
+            apiContent.push({
+                type: "image_url",
+                image_url: { url: base64Data, detail: "high" }
+            });
+        }
     }
 
-    // 2. GPT-4o API ÇAĞRISI (Vision Yeteneği)
-    log("GPT-4o Vision'a gönderiliyor...", "inf");
+    // 4. API ÇAĞRISI
+    log("OpenAI'a gönderiliyor (Hibrit Mod)...", "inf");
     
     const res = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
       headers: { "Authorization": `Bearer ${key}`, "Content-Type": "application/json" },
       body: JSON.stringify({
-        model: "gpt-4o", // Vision destekleyen model
-        messages: [
-            {
-                role: "user",
-                content: imageContent
-            }
-        ],
-        max_tokens: 2000,
+        model: "gpt-4o", 
+        messages: [{ role: "user", content: apiContent }],
+        max_tokens: 3000,
         temperature: 0.2
       })
     });
@@ -260,12 +305,10 @@ async function startProcess() {
 
     const data = await res.json();
     let content = data.choices[0].message.content;
-    
-    // JSON temizleme (bazen ```json wrapper içinde gelir)
     content = content.replace(/```json/g, "").replace(/```/g, "").trim();
     
     const parsedData = JSON.parse(content);
-    questions = parsedData.questions || parsedData; // Dönen yapıya göre esneklik
+    questions = parsedData.questions || parsedData;
 
     log(`${questions.length} soru başarıyla üretildi.`, "ok");
     renderQuiz();
@@ -278,7 +321,7 @@ async function startProcess() {
 
 function renderQuiz() {
   const area = document.getElementById("outputArea");
-  area.innerHTML = `<h2 style="border-bottom:2px solid #bf2d30; padding-bottom:10px">📝 Görsel Kaynaklı Sorular (${questions.length})</h2>`;
+  area.innerHTML = `<h2 style="border-bottom:2px solid #bf2d30; padding-bottom:10px">📝 Analiz Sonuçları & Sorular</h2>`;
   
   questions.forEach((q, idx) => {
     let optsHTML = "";
@@ -300,8 +343,8 @@ function renderQuiz() {
         <span class="question-title">${idx+1}. ${q.question}</span>
         <div>${optsHTML}</div>
         <div class="proof-box" id="proof_${idx}">
-          <strong>🔍 Görsel Kanıtı:</strong>
-          ${q.proof || "Görselden tespit edildi."}
+          <strong>🔍 Kaynak Kanıtı:</strong>
+          ${q.proof || "Dokümanda tespit edildi."}
         </div>
       </div>
     `;
@@ -332,13 +375,8 @@ function checkAnswers() {
     letters.slice(0, q.options.length).forEach(L => {
       const el = document.getElementById(`opt_${idx}_${L}`);
       
-      if(L === correctAns) {
-        el.classList.add('correct');
-      }
-      
-      if(userAns === L && userAns !== correctAns) {
-        el.classList.add('wrong');
-      }
+      if(L === correctAns) el.classList.add('correct');
+      if(userAns === L && userAns !== correctAns) el.classList.add('wrong');
     });
 
     if(userAns === correctAns) score++;
