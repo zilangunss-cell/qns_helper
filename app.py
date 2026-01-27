@@ -3,7 +3,7 @@ import yt_dlp
 import requests
 from openai import OpenAI
 
-st.set_page_config(page_title="Varpilatör AI", page_icon="🧠", layout="wide")
+st.set_page_config(page_title="Voca", page_icon="🧠", layout="wide")
 
 # --- YAN MENÜ: API KEY GİRİŞİ ---
 with st.sidebar:
