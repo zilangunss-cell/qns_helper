@@ -1,4 +1,5 @@
 streamlit
-yt-dlp
 openai
 youtube-transcript-api
+yt-dlp
+openai-whisper
