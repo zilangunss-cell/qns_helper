@@ -9,10 +9,7 @@ st.set_page_config(page_title="Varpilatör", page_icon="🧠", layout="wide")
 with st.sidebar:
     st.header("🔑 Giriş")
     st.write("Uygulamayı kullanmak için OpenAI API anahtarını girmen gerekir.")
-    
-    # Şifre kutusu (type='password' olduğu için yazılanlar nokta nokta görünür)
     user_api_key = st.text_input("OpenAI API Key:", type="password", placeholder="sk-...")
-    
     st.divider()
     st.info("💡 **Not:** Bu anahtar hiçbir yere kaydedilmez. Sayfayı yenilediğinde silinir.")
     st.markdown("[API Key Nereden Alınır?](https://platform.openai.com/api-keys)")
@@ -24,7 +21,6 @@ st.write("Senin anahtarın, senin kontrolün. YouTube videosunu yapıştır ve �
 youtube_url = st.text_input("YouTube Video Linkini Yapıştır:")
 
 if youtube_url:
-    # Video ID ve Kapak Resmi
     video_id = ""
     if "v=" in youtube_url:
         video_id = youtube_url.split("v=")[1].split("&")[0]
@@ -38,28 +34,23 @@ if youtube_url:
         with col2:
             st.success("Video algılandı.")
 
-    # Buton
     if st.button("🚀 AI ile Analiz Et"):
-        # ÖNCE KONTROL: Kullanıcı anahtarı girdi mi?
         if not user_api_key:
             st.error("⚠️ Lütfen önce sol menüden API Key'inizi girin!")
-            st.stop() # İşlemi burada durdur
-            
+            st.stop()
         elif not user_api_key.startswith("sk-"):
             st.warning("⚠️ Girdiğiniz API Key hatalı görünüyor. 'sk-' ile başlamalı.")
             st.stop()
-
         else:
-            # İşlemleri Başlat
-            with st.spinner("⏳ 1. Video metni çekiliyor..."):
+            with st.spinner("⏳ Video metni çekiliyor..."):
                 try:
-                    # --- 1. ADIM: METNİ ÇEKME (yt-dlp) ---
                     ydl_opts = {
                         'skip_download': True,
                         'writesubtitles': True,
                         'writeautomaticsub': True,
                         'subtitleslangs': ['tr', 'en'],
                         'quiet': True,
+                        'no_warnings': True
                     }
 
                     full_text = ""
@@ -72,33 +63,42 @@ if youtube_url:
                             if target_lang in captions:
                                 subs_list = captions[target_lang]
                                 json_url = None
+                                # Öncelikle json3 formatını ara
                                 for sub in subs_list:
-                                    if sub['ext'] == 'json3':
+                                    if sub.get('ext') == 'json3':
                                         json_url = sub['url']
                                         break
+                                
+                                # Eğer json3 yoksa ilk bulduğunu al
                                 if not json_url and subs_list:
                                     json_url = subs_list[0]['url']
 
                                 if json_url:
                                     response = requests.get(json_url)
-                                    data = response.json()
-                                    if 'events' in data:
-                                        for event in data['events']:
-                                            if 'segs' in event:
-                                                for seg in event['segs']:
-                                                    if 'utf8' in seg:
-                                                        full_text += seg['utf8'] + " "
+                                    # HATA DÜZELTME: Yanıtın boş olup olmadığını kontrol et
+                                    if response.status_code == 200 and response.text.strip():
+                                        try:
+                                            data = response.json()
+                                            if 'events' in data:
+                                                for event in data['events']:
+                                                    if 'segs' in event:
+                                                        for seg in event['segs']:
+                                                            if 'utf8' in seg:
+                                                                full_text += seg['utf8'] + " "
+                                        except ValueError:
+                                            st.error("❌ Altyazı verisi okunamadı (JSON ayrıştırma hatası).")
+                                            st.stop()
+                                    else:
+                                        st.error("❌ YouTube altyazı sunucusundan boş yanıt döndü.")
+                                        st.stop()
                     
-                    if not full_text:
-                        st.error("❌ Bu videonun altyazısı yok veya çekilemedi.")
+                    if not full_text.strip():
+                        st.error("❌ Bu videonun altyazısı bulunamadı veya erişilemez durumda.")
                         st.stop()
 
-                    # --- 2. ADIM: GPT İLE ÖZETLEME ---
-                    with st.spinner("🧠 2. Yapay Zeka özetliyor..."):
-                        
-                        # Kullanıcının girdiği anahtarı kullanıyoruz
+                    # --- GPT İLE ÖZETLEME ---
+                    with st.spinner("🧠 Yapay Zeka özetliyor..."):
                         client = OpenAI(api_key=user_api_key)
-                        
                         prompt = f"""
                         Aşağıdaki video transkriptini incele.
                         Bana videonun ana konusunu, anlatılan teknikleri ve en önemli noktalarını 
@@ -107,7 +107,6 @@ if youtube_url:
                         Metin:
                         {full_text[:15000]} 
                         """
-
                         response = client.chat.completions.create(
                             model="gpt-4o-mini",
                             messages=[
@@ -115,16 +114,12 @@ if youtube_url:
                                 {"role": "user", "content": prompt}
                             ]
                         )
-                        
                         ozet = response.choices[0].message.content
-
-                        # SONUÇLARI GÖSTER
                         st.divider()
                         st.subheader("✨ AI Özeti")
                         st.markdown(ozet)
-                        
                         with st.expander("📄 Video Metnini Göster"):
                             st.text_area("Transcript", full_text, height=200)
 
                 except Exception as e:
-                    st.error(f"Bir hata oluştu: {e}")
+                    st.error(f"Bir hata oluştu: {str(e)}")
