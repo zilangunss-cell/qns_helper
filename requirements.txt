@@ -1,5 +1,5 @@
+yt-dlp>=2024.04.09
 streamlit
 openai
 youtube-transcript-api
-yt-dlp
 openai-whisper
