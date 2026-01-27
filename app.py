@@ -1,28 +1,85 @@
 import streamlit as st
+import yt_dlp
+import os
+import whisper  # Ücretsiz yerel Whisper kütüphanesi
 from youtube_transcript_api import YouTubeTranscriptApi
 from openai import OpenAI
 
 st.set_page_config(page_title="Varpilatör", page_icon="🧠", layout="wide")
 
-# --- YAN MENÜ: API KEY GİRİŞİ ---
+# --- YAN MENÜ ---
 with st.sidebar:
     st.header("🔑 Giriş")
-    st.write("Uygulamayı kullanmak için OpenAI API anahtarını girmen gerekir.")
-    
+    st.write("Özetleme (GPT) için OpenAI API anahtarını girmen gerekir.")
+    st.caption("Not: Sesi yazıya dökme işlemi artık ÜCRETSİZ modelle yapılıyor!")
     user_api_key = st.text_input("OpenAI API Key:", type="password", placeholder="sk-...")
+
+# --- FONKSİYONLAR ---
+
+@st.cache_resource
+def load_whisper_model():
+    # Modeli bir kez yükle ve önbelleğe al (Hız kazanmak için)
+    # 'tiny' modeli en hızlısıdır ve ücretsiz sunucular için uygundur.
+    # Daha iyi kalite için 'base' yapılabilir ama bellek hatası verebilir.
+    return whisper.load_model("base")
+
+def transcribe_with_local_whisper(video_url):
+    """
+    Ücretsiz yerel Whisper modeli ile sesi yazıya döker.
+    """
+    video_id = video_url.split("v=")[1].split("&")[0] if "v=" in video_url else video_url.split("/")[-1]
+    audio_file = f"{video_id}.mp3"
+
+    # 1. Sesi İndir (yt-dlp)
+    # Whisper için mp3 veya m4a uygundur.
+    ydl_opts = {
+        'format': 'bestaudio/best',
+        'outtmpl': video_id, # Uzantıyı post-processor ekler
+        'postprocessors': [{
+            'key': 'FFmpegExtractAudio',
+            'preferredcodec': 'mp3',
+            'preferredquality': '192',
+        }],
+        'quiet': True,
+    }
     
-    st.divider()
-    st.info("💡 **Not:** Bu anahtar hiçbir yere kaydedilmez. Sayfayı yenilediğinde silinir.")
-    st.markdown("[API Key Nereden Alınır?](https://platform.openai.com/api-keys)")
+    status_text = st.empty()
+    status_text.info("📥 Video sesi indiriliyor...")
+    
+    try:
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            ydl.download([video_url])
+    except Exception as e:
+        return None, f"Ses indirme hatası: {e}"
+
+    # 2. Whisper ile Yerel Olarak Çevir
+    status_text.info("🤖 Yapay Zeka sesi dinliyor (Bu işlem 1-2 dk sürebilir)...")
+    
+    try:
+        model = load_whisper_model()
+        # Sesi modele veriyoruz
+        result = model.transcribe(audio_file)
+        text = result["text"]
+        
+        # Temizlik
+        if os.path.exists(audio_file):
+            os.remove(audio_file)
+            
+        status_text.empty()
+        return text, None
+        
+    except Exception as e:
+        if os.path.exists(audio_file):
+            os.remove(audio_file)
+        return None, f"Whisper işlem hatası: {e}"
 
 # --- ANA EKRAN ---
-st.title("🧠 Varpilatör - Güvenli Mod")
-st.write("Senin anahtarın, senin kontrolün. YouTube videosunu yapıştır ve özeti al.")
+st.title("🧠 Varpilatör - Tamamen Ücretsiz Transkript Modu")
+st.write("Altyazısı olmayan videoları sunucu tabanlı yapay zeka ile çözer.")
 
 youtube_url = st.text_input("YouTube Video Linkini Yapıştır:")
 
 if youtube_url:
-    # Video ID Çıkarma
     video_id = ""
     if "v=" in youtube_url:
         video_id = youtube_url.split("v=")[1].split("&")[0]
@@ -30,73 +87,68 @@ if youtube_url:
         video_id = youtube_url.split("/")[-1]
         
     if video_id:
-        col1, col2 = st.columns([1, 2])
-        with col1:
-            st.image(f"https://img.youtube.com/vi/{video_id}/0.jpg", use_container_width=True)
-        with col2:
-            st.success("Video algılandı.")
+        st.image(f"https://img.youtube.com/vi/{video_id}/0.jpg", width=300)
 
-    # Buton
-    if st.button("🚀 AI ile Analiz Et"):
-        if not user_api_key:
-            st.error("⚠️ Lütfen önce sol menüden API Key'inizi girin!")
+    if st.button("🚀 Analiz Et"):
+        if not user_api_key or not user_api_key.startswith("sk-"):
+            st.error("⚠️ Lütfen özetleme için API Key girin.")
             st.stop()
-        elif not user_api_key.startswith("sk-"):
-            st.warning("⚠️ Girdiğiniz API Key hatalı görünüyor. 'sk-' ile başlamalı.")
-            st.stop()
-        else:
-            # --- İŞLEMLER ---
-            with st.spinner("⏳ 1. Video metni çekiliyor..."):
-                full_text = ""
+
+        full_text = ""
+        
+        # --- AŞAMA 1: YouTube Altyazısını Dene (En Hızlısı) ---
+        with st.spinner("🔍 Altyazı kontrol ediliyor..."):
+            try:
+                transcript_list = YouTubeTranscriptApi.get_transcript(video_id, languages=['tr', 'tr-TR', 'en'])
+                for t in transcript_list:
+                    full_text += t['text'] + " "
+                st.success("✅ YouTube altyazısı bulundu!")
+            except Exception:
+                # Altyazı yoksa sessizce devam et
+                pass
+        
+        # --- AŞAMA 2: Altyazı Yoksa Yerel Whisper Kullan (ÜCRETSİZ) ---
+        if not full_text:
+            st.warning("⚠️ Hazır altyazı yok. Ücretsiz AI motoru devreye giriyor...")
+            
+            # Bu işlem sunucuda yapılır, API parası gitmez.
+            transcribed_text, error = transcribe_with_local_whisper(youtube_url)
+            
+            if error:
+                st.error(error)
+                st.stop()
+            else:
+                full_text = transcribed_text
+                st.success("✅ Ses başarıyla metne çevrildi!")
+
+        # --- AŞAMA 3: GPT ile Özetle (Sadece Burası API Harcar) ---
+        if full_text:
+            with st.spinner("🧠 Metin özetleniyor..."):
                 try:
-                    # BURASI DÜZELTİLDİ: Artık istek hatası vermez.
-                    # Önce Türkçe, yoksa İngilizce altyazıyı dener.
-                    transcript = YouTubeTranscriptApi.get_transcript(video_id, languages=['tr', 'tr-TR', 'en'])
+                    client = OpenAI(api_key=user_api_key)
+                    prompt = f"""
+                    Aşağıdaki metni incele.
+                    Videonun ana konusunu, teknik detaylarını ve önemli noktalarını 
+                    TÜRKÇE maddeler halinde özetle.
                     
-                    # Parçaları birleştir
-                    for t in transcript:
-                        full_text += t['text'] + " "
-                        
+                    Metin:
+                    {full_text[:15000]}
+                    """
+                    
+                    response = client.chat.completions.create(
+                        model="gpt-4o-mini",
+                        messages=[
+                            {"role": "system", "content": "Sen uzman bir asistansın."},
+                            {"role": "user", "content": prompt}
+                        ]
+                    )
+                    
+                    st.divider()
+                    st.subheader("✨ AI Özeti")
+                    st.markdown(response.choices[0].message.content)
+                    
+                    with st.expander("📝 Metni Göster"):
+                        st.text_area("Transkript", full_text, height=200)
+
                 except Exception as e:
-                    # Altyazı kapalıysa veya hata varsa
-                    st.error("❌ Hata: Videonun altyazısı çekilemedi. Altyazı kapalı olabilir.")
-                    st.error(f"Teknik Hata Detayı: {e}")
-                    st.stop()
-
-                if not full_text:
-                    st.error("❌ Metin boş geldi.")
-                    st.stop()
-
-                # --- GPT İLE ÖZETLEME ---
-                with st.spinner("🧠 2. Yapay Zeka özetliyor..."):
-                    try:
-                        client = OpenAI(api_key=user_api_key)
-                        
-                        prompt = f"""
-                        Aşağıdaki video transkriptini incele.
-                        Bana videonun ana konusunu, anlatılan teknikleri ve en önemli noktalarını 
-                        TÜRKÇE maddeler halinde özetle.
-                        
-                        Metin:
-                        {full_text[:15000]} 
-                        """
-
-                        response = client.chat.completions.create(
-                            model="gpt-4o-mini",
-                            messages=[
-                                {"role": "system", "content": "Sen yardımcı bir asistansın."},
-                                {"role": "user", "content": prompt}
-                            ]
-                        )
-                        
-                        ozet = response.choices[0].message.content
-
-                        st.divider()
-                        st.subheader("✨ AI Özeti")
-                        st.markdown(ozet)
-                        
-                        with st.expander("📄 Video Metnini Göster"):
-                            st.text_area("Transcript", full_text, height=200)
-                            
-                    except Exception as e:
-                        st.error(f"OpenAI hatası: {e}")
+                    st.error(f"Özetleme hatası: {e}")
